@@ -1,7 +1,7 @@
 {
   "routes": [
-    { "src": "/api/analyze-layout", "dest": "/analyze-layout.js" },
-    { "src": "/api/analyze-photo", "dest": "/analyze-photo.js" },
-    { "src": "/api/get-quote", "dest": "/get-quote.js" }
+    { "src": "/api/analyze-layout", "dest": "/API/analyze-layout.js" },
+    { "src": "/api/analyze-photo", "dest": "/API/analyze-photo.js" },
+    { "src": "/api/get-quote", "dest": "/API/get-quote.js" }
   ]
 }
