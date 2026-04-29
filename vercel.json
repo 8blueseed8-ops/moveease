@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "analyze-layout.js": { "memory": 1024 },
+    "analyze-photo.js": { "memory": 1024 },
+    "get-quote.js": { "memory": 1024 }
+  },
+  "routes": [
+    { "src": "/api/analyze-layout", "dest": "/analyze-layout.js" },
+    { "src": "/api/analyze-photo", "dest": "/analyze-photo.js" },
+    { "src": "/api/get-quote", "dest": "/get-quote.js" }
+  ]
+}
