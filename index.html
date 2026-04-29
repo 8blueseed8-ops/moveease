@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOVA — Smart Moving App</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+/* ── AUTH SCREENS ── */
+#splash{background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;position:relative;overflow:hidden}
+#splash::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(232,86,58,0.35),transparent 70%)}
+#splash::after{content:'';position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(58,127,232,0.2),transparent 70%)}
+.splash-logo{font-size:52px;margin-bottom:16px;position:relative;z-index:1}
+.splash-title{font-family:'Fraunces',serif;font-size:38px;font-weight:900;color:white;letter-spacing:-2px;margin-bottom:8px;position:relative;z-index:1}
+.splash-title span{color:var(--accent)}
+.splash-sub{font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:56px;position:relative;z-index:1}
+.splash-btn{width:calc(100% - 48px);background:var(--accent);color:white;border:none;border-radius:16px;padding:17px;font-size:16px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(232,86,58,0.4);position:relative;z-index:1;transition:all 0.2s}
+.splash-btn:active{transform:scale(0.98)}
+.splash-login-link{color:rgba(255,255,255,0.45);font-size:13px;margin-top:16px;cursor:pointer;position:relative;z-index:1}
+.splash-login-link span{color:rgba(255,255,255,0.8);text-decoration:underline}
+
+#authscreen{overflow-y:auto;min-height:100vh;position:relative;background:#f5f0eb}
+.auth-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;min-height:100vh}
+.auth-bg-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(245,240,235,0.1) 0%,rgba(245,240,235,0.15) 60%,rgba(245,240,235,0.4) 100%)}
+.auth-arc{position:absolute;top:-40px;right:-60px;width:340px;height:340px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.5);pointer-events:none}
+.auth-content{position:relative;z-index:1;padding:56px 24px 20px;display:flex;flex-direction:column;align-items:center}
+.auth-logo-wrap{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.auth-logo-icon{font-size:28px}
+.auth-logo-text{font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:#2a1f14;letter-spacing:-1px}
+.auth-logo-sub{font-size:13px;color:rgba(60,40,20,0.5);margin-bottom:28px;text-align:center}
+.auth-card{background:rgba(255,255,255,0.93);border-radius:28px;padding:28px 24px 24px;width:100%;box-shadow:0 8px 40px rgba(60,40,20,0.1),0 2px 8px rgba(60,40,20,0.06)}
+.auth-tabs{display:flex;background:rgba(245,240,235,0.8);border-radius:14px;padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;padding:11px;border:none;background:transparent;border-radius:10px;font-size:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;color:rgba(60,40,20,0.45);cursor:pointer;transition:all 0.2s}
+.auth-tab.active{background:white;color:#e8563a;box-shadow:0 2px 10px rgba(60,40,20,0.08)}
+.auth-title{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:#1a1208;margin-bottom:4px}
+.auth-sub{font-size:13px;color:rgba(60,40,20,0.5);margin-bottom:20px}
+.auth-error{background:#fff0ed;border:1px solid #ffcdc4;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent);margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+.field-group{margin-bottom:14px}
+.field-label{font-size:12px;font-weight:700;color:#4a3828;margin-bottom:6px;letter-spacing:0.3px}
+.field-input-wrap{position:relative}
+.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;opacity:0.4;pointer-events:none}
+.field-input{width:100%;background:rgba(245,240,235,0.7);border:1.5px solid rgba(200,185,170,0.4);border-radius:14px;padding:13px 16px 13px 40px;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;color:#1a1208;outline:none;transition:all 0.2s}
+.field-input:focus{border-color:#e8563a;background:white;box-shadow:0 0 0 3px rgba(232,86,58,0.08)}
+.field-input::placeholder{color:rgba(60,40,20,0.3)}
+.field-input.no-icon{padding-left:16px}
+.btn-primary{width:100%;background:linear-gradient(135deg,#e8563a,#d94420);color:white;border:none;border-radius:16px;padding:17px;font-size:16px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all 0.2s;box-shadow:0 6px 20px rgba(232,86,58,0.35);margin-top:4px}
+.btn-primary:active{transform:scale(0.98)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:rgba(60,40,20,0.35);font-size:13px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(200,185,170,0.4)}
+.social-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.social-btn{background:rgba(245,240,235,0.8);border:1.5px solid rgba(200,185,170,0.35);border-radius:14px;padding:13px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;color:#3a2818;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.social-btn:active{background:white}
+.auth-footer-txt{text-align:center;font-size:12px;color:rgba(60,40,20,0.4);margin-top:20px;padding:0 20px}
+
+/* ROLE SELECTOR */
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.role-btn{background:rgba(245,240,235,0.7);border:2px solid rgba(200,185,170,0.4);border-radius:16px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s}
+.role-btn:active{transform:scale(0.97)}
+.role-btn.selected{border-color:var(--accent);background:var(--accent-light);box-shadow:0 4px 16px rgba(232,86,58,0.15)}
+.role-btn.selected.partner{border-color:#3a7fe8;background:var(--blue-light);box-shadow:0 4px 16px rgba(58,127,232,0.15)}
+.role-emoji{font-size:28px;margin-bottom:8px}
+.role-title{font-size:13px;font-weight:700;color:#2a1f14;margin-bottom:6px}
+.role-desc{font-size:10px;color:rgba(60,40,20,0.5);line-height:1.7}
+.role-btn.selected .role-title{color:var(--accent)}
+.role-btn.selected.partner .role-title{color:#3a7fe8}
+.role-btn.selected .role-desc{color:rgba(232,86,58,0.7)}
+.role-btn.selected.partner .role-desc{color:rgba(58,127,232,0.7)}
+.auth-tabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:10px;border:none;background:transparent;border-radius:9px;font-size:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.auth-tab.active{background:var(--white);color:var(--dark);box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.auth-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--dark);margin-bottom:6px}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.auth-error{background:#fff0ed;border:1px solid #ffcdc4;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent);margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.social-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.social-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dark2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.2s}
+.social-btn:active{background:var(--border)}
+.auth-footer{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
+.auth-footer span{color:var(--accent);font-weight:600;cursor:pointer}
+
+/* USER BADGE */
+.user-badge{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px 5px 5px;cursor:pointer}
+.user-avatar{width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white}
+.user-name{font-size:12px;color:white;font-weight:600;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* SAVE INDICATOR */
+.save-dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:absolute;top:10px;right:10px;display:none}
+.save-dot.show{display:block}
+
+/* LANG SWITCHER */
+.lang-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:white;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px}
+.lang-btn:active{background:rgba(255,255,255,0.25)}
+
+/* ── 2D FLOORPLAN ── */
+.fp-tabs{display:flex;background:var(--bg);border-radius:12px;padding:3px;margin-bottom:16px}
+.fp-tab{flex:1;padding:9px;border:none;background:transparent;border-radius:9px;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.fp-tab.active{background:var(--white);color:var(--dark);box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+
+.upload-area{border:2px dashed var(--border);border-radius:16px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--white);position:relative}
+.upload-area:active{border-color:var(--accent);background:var(--accent-light)}
+.upload-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+.canvas-container{position:relative;width:100%;border-radius:16px;overflow:hidden;background:#f0ede8;border:1px solid var(--border);touch-action:none;user-select:none;margin-bottom:8px}
+.fp-canvas{display:block;width:100%;touch-action:none}
+
+.fp-toolbar{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px}
+.fp-toolbar::-webkit-scrollbar{display:none}
+.fp-tool{padding:7px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--dark2);cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.fp-tool.active{background:var(--dark);border-color:var(--dark);color:white}
+.fp-tool.danger{color:var(--accent)}
+.fp-tool:active{transform:scale(0.97)}
+
+.furn-palette-strip{display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;margin-bottom:10px}
+.furn-palette-strip::-webkit-scrollbar{display:none}
+.palette-chip{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;padding:8px 10px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);transition:all 0.2s;min-width:56px}
+.palette-chip:active{background:var(--accent-light);border-color:var(--accent)}
+.pc-emoji{font-size:20px}
+.pc-name{font-size:9px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pc-size{font-size:8px;color:var(--border)}
+
+.fp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.fp-stat{background:var(--white);border-radius:12px;padding:10px 8px;text-align:center;box-shadow:var(--shadow)}
+.fp-stat-val{font-family:'Fraunces',serif;font-size:16px;font-weight:900;color:var(--dark)}
+.fp-stat-label{font-size:9px;color:var(--muted);margin-top:2px}
+.fp-stat.warn .fp-stat-val{color:var(--accent)}
+.fp-stat.good .fp-stat-val{color:var(--green)}
+
+.sel-panel{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;background:var(--dark);border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);z-index:50;opacity:0;transform:translateX(-50%) translateY(20px);pointer-events:none;transition:all 0.3s}
+.sel-panel.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
+.sp-emoji{font-size:22px;flex-shrink:0}
+.sp-info{flex:1}
+.sp-name{font-size:13px;font-weight:700;color:white}
+.sp-pos{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px}
+.sp-warn-txt{font-size:11px;color:#ff6b6b;margin-top:2px;display:none}
+.sp-btns{display:flex;gap:6px}
+.sp-btn{background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:7px 10px;font-size:12px;color:white;cursor:pointer}
+.sp-btn.danger{background:rgba(232,86,58,0.3);color:#ff9b8a}
+
+.shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.shape-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.shape-btn.selected{background:var(--accent-light);border-color:var(--accent)}
+.shape-btn:active{transform:scale(0.96)}
+.shape-svg-mini{width:36px;height:26px}
+.shape-label{font-size:9px;font-weight:600;color:var(--dark2)}
+.shape-btn.selected .shape-label{color:var(--accent)}
+
+.ai-result-card{background:var(--green-light);border-radius:14px;padding:14px;margin-bottom:12px}
+.arc-title{font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px}
+.arc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.arc-item{background:var(--white);border-radius:10px;padding:10px;text-align:center}
+.arc-val{font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--dark)}
+.arc-label{font-size:10px;color:var(--muted);margin-top:2px}
+.arc-desc{font-size:12px;color:var(--dark2);line-height:1.5;background:var(--white);border-radius:10px;padding:10px}
+
+</style>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f7f5f0;--white:#fff;--dark:#1a1a1a;--dark2:#2d2d2d;
+  --accent:#e8563a;--accent-light:#fff0ed;
+  --green:#2db67d;--green-light:#e8f7f1;
+  --blue:#3a7fe8;--blue-light:#edf3ff;
+  --yellow:#f5a623;--yellow-light:#fff8ed;
+  --muted:#9a9a9a;--border:#e8e4dc;
+  --shadow:0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 48px rgba(0,0,0,0.14);
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;min-height:100vh;background:var(--bg);position:relative}
+.screen{display:none;flex-direction:column;min-height:100vh;animation:fadeIn 0.25s ease}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* COMMON */
+.page-header{background:var(--white);padding:50px 24px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer}
+.back-arrow{font-size:20px}.back-label{font-size:14px;color:var(--muted)}
+.page-title{font-family:'Fraunces',serif;font-size:26px;font-weight:900;color:var(--dark);letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.scrollable{flex:1;overflow-y:auto;padding:20px 24px 120px}
+.section-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;margin-top:22px}
+.section-label:first-child{margin-top:0}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--white);border-top:1px solid var(--border);display:flex;padding:12px 0 20px;box-shadow:0 -4px 20px rgba(0,0,0,0.06);z-index:20}
+#splash .bottom-nav, #authscreen .bottom-nav{display:none !important}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.nav-icon{font-size:22px}.nav-label{font-size:10px;font-weight:500;color:var(--muted)}
+.nav-item.active .nav-label{color:var(--accent);font-weight:700}
+.nav-dot{width:4px;height:4px;background:var(--accent);border-radius:50%;display:none}
+.nav-item.active .nav-dot{display:block}
+
+/* BUTTONS */
+.btn-primary{width:100%;background:var(--accent);color:white;border:none;border-radius:16px;padding:17px;font-size:15px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all 0.2s;box-shadow:0 6px 20px rgba(232,86,58,0.3)}
+.btn-primary:active{transform:scale(0.98)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-secondary{width:100%;background:var(--bg);color:var(--dark2);border:1.5px solid var(--border);border-radius:16px;padding:15px;font-size:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all 0.2s}
+.btn-secondary:active{background:var(--border)}
+
+/* TOAST */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--dark);color:white;padding:12px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:300;white-space:nowrap;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;justify-content:flex-end;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);width:100%;max-width:430px;border-radius:24px 24px 0 0;padding:24px 24px 40px;animation:slideUp 0.3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--dark);margin-bottom:20px}
+
+/* INPUTS */
+.field-group{margin-bottom:16px}
+.field-label{font-size:12px;font-weight:700;color:var(--dark2);margin-bottom:7px;letter-spacing:0.3px}
+.field-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dark);outline:none;transition:border-color 0.2s}
+.field-input:focus{border-color:var(--accent)}
+.field-input::placeholder{color:var(--muted)}
+.input-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.input-unit{position:relative}
+.input-unit .field-input{padding-right:36px}
+.unit-label{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);font-weight:600;pointer-events:none}
+
+/* ── HOME ── */
+#home{background:var(--bg)}
+.home-header{background:var(--dark);padding:50px 24px 28px;position:relative;overflow:hidden}
+.home-header::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(232,86,58,0.3),transparent 70%)}
+.home-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.home-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:white}
+.home-avatar{width:38px;height:38px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;cursor:pointer}
+.home-greeting{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:4px}
+.home-name{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:white;letter-spacing:-0.5px}
+.home-name span{color:var(--accent)}
+.project-card{background:var(--white);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px;cursor:pointer;transition:transform 0.2s;position:relative;overflow:hidden}
+.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--blue))}
+.project-card:active{transform:scale(0.99)}
+.project-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.project-title{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--dark)}
+.project-date{font-size:12px;color:var(--muted);margin-top:2px}
+.status-badge{padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.status-progress{background:var(--blue-light);color:var(--blue)}
+.status-ai{background:var(--accent-light);color:var(--accent)}
+.progress-steps{display:flex;gap:6px}
+.ps{flex:1;height:5px;border-radius:3px;background:var(--border)}
+.ps.done{background:var(--green)}.ps.active{background:var(--accent)}
+.ps-labels{display:flex;justify-content:space-between;margin-top:7px}
+.ps-label{font-size:10px;color:var(--muted)}
+.ps-label.done{color:var(--green);font-weight:600}
+.ps-label.active{color:var(--accent);font-weight:600}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:16px;padding:14px 10px;text-align:center;box-shadow:var(--shadow)}
+.stat-num{font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:var(--dark)}
+.stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.action-card{background:var(--white);border-radius:18px;padding:18px;cursor:pointer;box-shadow:var(--shadow);transition:all 0.2s;display:flex;flex-direction:column;gap:8px}
+.action-card:active{transform:scale(0.97)}
+.action-card.accent{background:var(--accent)}
+.action-card.dark{background:var(--dark)}
+.action-card.green{background:var(--green)}
+.action-card.green .action-title{color:white}
+.action-card.green .action-desc{color:rgba(255,255,255,0.6)}
+.action-icon{font-size:26px}
+.action-title{font-size:14px;font-weight:700;color:var(--dark)}
+.action-card.accent .action-title,.action-card.dark .action-title,.action-card.green .action-title{color:white}
+.action-desc{font-size:11px;color:var(--muted)}
+.action-card.accent .action-desc,.action-card.dark .action-desc,.action-card.green .action-desc{color:rgba(255,255,255,0.6)}
+
+/* ── ROOMS ── */
+.room-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.room-card{background:var(--white);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.room-color-bar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:18px 0 0 18px}
+.room-emoji{font-size:26px;flex-shrink:0}
+.room-info{flex:1}
+.room-name{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:3px}
+.room-dims{font-size:12px;color:var(--muted)}
+.room-area{font-size:13px;font-weight:700;color:var(--accent);margin-left:auto}
+.room-delete{width:28px;height:28px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);transition:all 0.2s}
+.room-delete:active{background:#ffe0db;color:var(--accent)}
+.add-card{background:var(--white);border-radius:18px;padding:18px;border:1.5px dashed var(--border);cursor:pointer;display:flex;align-items:center;gap:14px;transition:all 0.2s}
+.add-card:active{background:var(--bg)}
+.add-card-icon{font-size:22px;color:var(--muted)}
+.add-card-text{font-size:14px;font-weight:600;color:var(--muted)}
+.total-area-card{background:var(--dark);border-radius:18px;padding:18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.total-area-label{font-size:13px;color:rgba(255,255,255,0.5)}
+.total-area-val{font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:white}
+.total-area-unit{font-size:14px;color:var(--accent)}
+.room-type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.room-type-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 4px;cursor:pointer;text-align:center;transition:all 0.2s}
+.room-type-btn.selected{background:var(--accent-light);border-color:var(--accent)}
+.room-type-btn:active{transform:scale(0.96)}
+.rt-emoji{font-size:20px;display:block;margin-bottom:4px}
+.rt-label{font-size:10px;font-weight:600;color:var(--dark2)}
+.room-type-btn.selected .rt-label{color:var(--accent)}
+
+/* ── FURNITURE ── */
+.furn-filter{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.furn-filter::-webkit-scrollbar{display:none}
+.filter-chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;transition:all 0.2s;background:var(--white);border:1.5px solid var(--border);color:var(--muted)}
+.filter-chip.active{background:var(--dark);border-color:var(--dark);color:white}
+.furn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.furn-card{background:var(--white);border-radius:18px;padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s;position:relative;border:2px solid transparent}
+.furn-card.selected{border-color:var(--accent);background:var(--accent-light)}
+.furn-card:active{transform:scale(0.97)}
+.furn-check{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.furn-card.selected .furn-check{display:flex}
+.furn-emoji{font-size:30px;margin-bottom:10px}
+.furn-name{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:3px}
+.furn-dim{font-size:11px;color:var(--muted)}
+.furn-room-tag{font-size:10px;font-weight:600;color:var(--blue);margin-top:4px}
+.furn-count-bar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 48px);max-width:382px;background:var(--dark);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-lg);z-index:15;transition:opacity 0.3s,transform 0.3s;opacity:0;transform:translateX(-50%) translateY(20px);pointer-events:none}
+.furn-count-bar.visible{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
+.furn-count-text{color:white;font-size:14px;font-weight:600}
+.furn-count-text span{color:var(--accent);font-family:'Fraunces',serif;font-size:18px;font-weight:900}
+.furn-next-btn{background:var(--accent);color:white;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer}
+
+/* ── AI LAYOUT ── */
+#ailayout{background:var(--bg)}
+
+/* LOADING STATE */
+.ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px;padding:40px}
+.ai-loading-ring{width:64px;height:64px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-loading-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--dark);text-align:center}
+.ai-loading-steps{display:flex;flex-direction:column;gap:10px;width:100%}
+.ai-step{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--white);border-radius:12px;font-size:13px;color:var(--muted);transition:all 0.4s}
+.ai-step.active{color:var(--dark);font-weight:600;border:1.5px solid var(--accent);background:var(--accent-light)}
+.ai-step.done{color:var(--green);font-weight:600;background:var(--green-light)}
+.ai-step-icon{font-size:18px;flex-shrink:0}
+
+/* RESULT */
+.ai-result{display:none}
+.ai-result.show{display:block}
+
+/* SCORE CARD */
+.score-hero{background:var(--dark);padding:32px 24px;position:relative;overflow:hidden;border-radius:20px;margin-bottom:16px}
+.score-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(232,86,58,0.4),transparent 70%)}
+.score-label{font-size:11px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px}
+.score-val{font-family:'Fraunces',serif;font-size:52px;font-weight:900;color:white;letter-spacing:-2px;line-height:1}
+.score-val span{font-size:22px;color:var(--accent)}
+.score-grade{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;color:white;margin-top:10px}
+
+/* FLOOR PLAN */
+.floorplan-card{background:var(--white);border-radius:20px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.floorplan-title{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.floorplan-canvas{position:relative;background:#f9f8f5;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.fp-room-block{position:absolute;border:1.5px solid;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;font-size:9px;font-weight:600}
+.fp-furn-block{position:absolute;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;border:1px solid rgba(0,0,0,0.1);transition:all 0.3s}
+.fp-furn-label{font-size:7px;font-weight:700;color:rgba(0,0,0,0.6);text-align:center;line-height:1.1;margin-top:1px}
+
+/* ROOM LAYOUTS */
+.room-layout-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.rl-card{background:var(--white);border-radius:18px;padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s;border:2px solid transparent}
+.rl-card.expanded{border-color:var(--accent)}
+.rl-card:active{transform:scale(0.99)}
+.rl-header{display:flex;align-items:center;gap:12px}
+.rl-emoji{font-size:24px;flex-shrink:0}
+.rl-info{flex:1}
+.rl-name{font-size:15px;font-weight:700;color:var(--dark)}
+.rl-count{font-size:12px;color:var(--muted);margin-top:2px}
+.rl-score{font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--green)}
+.rl-toggle{font-size:18px;color:var(--muted);transition:transform 0.3s}
+.rl-card.expanded .rl-toggle{transform:rotate(180deg)}
+.rl-detail{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.rl-card.expanded .rl-detail{display:block}
+.rl-furn-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.rl-furn-item:last-child{margin-bottom:0}
+.rl-furn-emoji{font-size:18px;flex-shrink:0;margin-top:1px}
+.rl-furn-info{flex:1}
+.rl-furn-name{font-size:13px;font-weight:700;color:var(--dark)}
+.rl-furn-pos{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.rl-tip{background:var(--yellow-light);border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12px;color:var(--dark2);line-height:1.5}
+.rl-tip-icon{font-size:14px;margin-right:4px}
+
+/* AI INSIGHT */
+.insight-card{background:linear-gradient(135deg,#1a2a3a,var(--dark));border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow-lg)}
+.insight-tag{font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:10px}
+.insight-text{font-size:14px;color:rgba(255,255,255,0.85);line-height:1.7}
+.insight-highlights{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ih-chip{background:rgba(255,255,255,0.08);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6)}
+.ih-chip.good{background:rgba(45,182,125,0.15);color:#5de0a5}
+.ih-chip.warn{background:rgba(245,166,35,0.15);color:#f5c563}
+
+/* NEXT */
+.next-card{background:linear-gradient(135deg,var(--accent),#ff7a5c);border-radius:20px;padding:20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;box-shadow:0 8px 24px rgba(232,86,58,0.3);margin-bottom:12px}
+.nc-label{font-size:11px;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.nc-title{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:white;margin-top:4px}
+.nc-arrow{font-size:28px;color:white}
+
+/* ── QUOTE ── */
+.quote-hero{background:var(--dark);padding:28px 20px;position:relative;overflow:hidden;border-radius:20px;margin-bottom:16px}
+.quote-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(45,182,125,0.4),transparent 70%)}
+.qh-tag{font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px}
+.qh-title{font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:white;letter-spacing:-1px;margin-bottom:4px}
+.qh-sub{font-size:13px;color:rgba(255,255,255,0.5)}
+
+.move-info-card{background:var(--white);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.mic-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:16px}
+.addr-grid{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:end;margin-bottom:12px}
+.addr-arrow{text-align:center;font-size:18px;color:var(--muted);padding-bottom:14px}
+.select-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--dark);outline:none;-webkit-appearance:none}
+.select-input:focus{border-color:var(--accent)}
+.floor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+.quote-summary-box{background:var(--bg);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.qsb-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.qsb-row:last-child{border-bottom:none}
+.qsb-row span:first-child{color:var(--muted)}
+.qsb-row span:last-child{font-weight:700;color:var(--dark)}
+
+.est-loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:36px 0}
+.est-ring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.9s linear infinite}
+.est-text{font-size:14px;color:var(--muted);text-align:center;line-height:1.6}
+
+.company-cards{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.company-card{background:var(--white);border-radius:18px;padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s;border:2px solid transparent;position:relative}
+.company-card.best{border-color:var(--green)}
+.company-card.chosen{border-color:var(--accent);background:var(--accent-light)}
+.company-card:active{transform:scale(0.99)}
+.best-tag{background:var(--green);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:8px}
+.company-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.company-name{font-size:16px;font-weight:700;color:var(--dark)}
+.company-rating{font-size:12px;color:var(--muted);margin-top:2px}
+.company-price{font-family:'Fraunces',serif;font-size:26px;font-weight:900;color:var(--dark);text-align:right}
+.company-price-sub{font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+.company-feats{display:flex;gap:6px;flex-wrap:wrap}
+.cf-chip{background:var(--bg);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--dark2)}
+.company-card.best .cf-chip{background:var(--green-light);color:var(--green)}
+.company-card.chosen .cf-chip{background:var(--accent-light);color:var(--accent)}
+.chosen-badge{position:absolute;top:14px;right:14px;background:var(--accent);color:white;width:24px;height:24px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.company-card.chosen .chosen-badge{display:flex}
+
+.booking-done{background:linear-gradient(135deg,var(--green),#1fa065);border-radius:20px;padding:24px;margin-bottom:16px;box-shadow:0 8px 24px rgba(45,182,125,0.3)}
+.bd-icon{font-size:40px;margin-bottom:12px}
+.bd-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:white;margin-bottom:6px}
+.bd-sub{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.5;margin-bottom:16px}
+.bd-details{background:rgba(255,255,255,0.12);border-radius:14px;padding:14px}
+.bd-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.bd-row:last-child{border-bottom:none}
+.bd-row span:first-child{color:rgba(255,255,255,0.6)}
+.bd-row span:last-child{color:white;font-weight:700}
+
+/* ROLE SELECTOR */
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.role-btn{background:var(--bg);border:2px solid var(--border);border-radius:16px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s}
+.role-btn:active{transform:scale(0.97)}
+.role-btn.selected{border-color:var(--accent);background:var(--accent-light)}
+.role-btn.selected.partner{border-color:#3a7fe8;background:var(--blue-light)}
+.role-emoji{font-size:28px;margin-bottom:8px}
+.role-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:6px}
+.role-desc{font-size:11px;color:var(--muted);line-height:1.7}
+.role-btn.selected .role-title{color:var(--accent)}
+.role-btn.selected.partner .role-title{color:var(--blue)}
+.role-btn.selected .role-desc{color:var(--accent);opacity:0.8}
+.role-btn.selected.partner .role-desc{color:var(--blue);opacity:0.8}
+
+/* PARTNER HOME */
+#partnerHome{background:var(--bg)}
+.partner-header{background:linear-gradient(135deg,#1a2a4a,#1a1a2e);padding:50px 24px 28px;position:relative;overflow:hidden}
+.partner-header::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(58,127,232,0.3),transparent 70%)}
+.partner-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(58,127,232,0.2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;color:#7ab3f5;margin-bottom:12px}
+.partner-stat-card{background:var(--white);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
+.partner-stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.partner-stat-row:last-child{border-bottom:none}
+.psr-label{font-size:13px;color:var(--muted)}
+.psr-val{font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--dark)}
+.psr-val.accent{color:var(--accent)}
+.psr-val.green{color:var(--green)}
+.request-card{background:var(--white);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:10px;cursor:pointer;transition:all 0.2s;border-left:4px solid var(--accent)}
+.request-card:active{transform:scale(0.99)}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.rc-title{font-size:15px;font-weight:700;color:var(--dark)}
+.rc-price{font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:var(--green)}
+.rc-info{font-size:12px;color:var(--muted);line-height:1.6}
+.rc-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rc-tag{background:var(--bg);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--dark2)}
+.rc-tag.new{background:var(--accent-light);color:var(--accent)}
+.partner-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.partner-action{background:var(--white);border-radius:18px;padding:18px;cursor:pointer;box-shadow:var(--shadow);transition:all 0.2s;display:flex;flex-direction:column;gap:8px}
+.partner-action:active{transform:scale(0.97)}
+.partner-action.blue{background:#3a7fe8}
+.partner-action.blue .action-title,.partner-action.blue .action-desc{color:white}
+.partner-action.blue .action-desc{color:rgba(255,255,255,0.7)}
+
+/* QR real */
+.qr-real { width: 56px; height: 56px; flex-shrink: 0; background: white; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.qr-real canvas, .qr-real img { width: 52px !important; height: 52px !important; }
+.label-item { background: var(--white); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+.label-item:active { transform: scale(0.98); border-color: var(--accent); }
+.label-copy-btn { background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; margin-top: 4px; }
+.label-copy-btn:active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+
+/* LABEL DETAIL MODAL */
+.label-detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: flex-end; }
+.label-detail-overlay.open { display: flex; }
+.label-detail-sheet { background: var(--white); width: 100%; max-width: 430px; border-radius: 24px 24px 0 0; padding: 24px 24px 48px; animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+.lds-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.lds-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.lds-emoji { font-size: 36px; }
+.lds-name { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; color: var(--dark); }
+.lds-room { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.lds-qr-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+.lds-qr-box { background: white; border: 2px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.lds-qr-inner { width: 160px; height: 160px; }
+.lds-qr-inner canvas, .lds-qr-inner img { width: 160px !important; height: 160px !important; }
+.lds-qr-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+.lds-info-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.lds-info-row { background: var(--bg); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.lds-info-icon { font-size: 18px; flex-shrink: 0; }
+.lds-info-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.lds-info-val { font-size: 14px; font-weight: 600; color: var(--dark); line-height: 1.4; }
+.lds-map { background: var(--bg); border-radius: 16px; overflow: hidden; margin-bottom: 20px; position: relative; }
+.lds-map-canvas { width: 100%; height: 180px; position: relative; background: #f0ede8; }
+.lds-map-room { position: absolute; border: 2px solid; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; font-size: 9px; font-weight: 700; }
+.lds-map-furn { position: absolute; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid var(--accent); background: rgba(232,86,58,0.15); animation: pulse-furn 1.5s infinite; }
+@keyframes pulse-furn { 0%,100%{box-shadow:0 0 0 0 rgba(232,86,58,0.4)} 50%{box-shadow:0 0 0 6px rgba(232,86,58,0)} }
+.lds-map-label { font-size: 10px; color: var(--dark2); font-weight: 600; text-align: center; padding: 6px 10px; background: var(--white); border-radius: 0 0 14px 14px; }
+.lds-text-copy { background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; font-family: monospace; word-break: break-all; }
+.lds-copy-btn { width: 100%; background: var(--dark); color: white; border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; margin-bottom: 8px; }
+.lds-copy-btn:active { background: var(--accent); }
+.lds-close-btn { width: 100%; background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; }
+.label-intro{background:var(--dark);border-radius:20px;padding:20px;margin-bottom:16px}
+.li-title{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:white;margin-bottom:6px}
+.li-sub{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5}
+.label-list{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.label-item{background:var(--white);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)}
+.qr-mock{width:48px;height:48px;background:white;border-radius:8px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;padding:6px;flex-shrink:0;border:1px solid var(--border)}
+.qc{background:#1a1a1a;border-radius:1px}.qw{background:white}
+.label-info{flex:1}
+.label-name{font-weight:700;font-size:14px;color:var(--dark);margin-bottom:2px}
+.label-dest{font-size:12px;color:var(--accent);margin-bottom:2px}
+.label-order-num{font-size:11px;color:var(--muted)}
+.order-badge{width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.label-name{font-weight:700;font-size:14px;color:var(--dark);margin-bottom:2px}
+.label-dest{font-size:12px;color:var(--accent);margin-bottom:2px}
+.label-order-num{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="toast" id="toast"></div>
+
+<!-- ====== AUTH ====== -->
+<div class="screen active" id="authscreen">
+  <!-- 배경 -->
+  <div class="auth-bg">
+    <svg width="100%" height="100%" viewBox="0 0 430 960" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="display:block;min-height:100vh">
+      <!-- 베이지 배경 -->
+      <rect width="430" height="960" fill="#f2ece4"/>
+      <!-- 벽 -->
+      <rect width="430" height="620" fill="#ede6dc"/>
+      <!-- 바닥 -->
+      <rect y="620" width="430" height="340" fill="#e0d8cc"/>
+      <!-- 벽/바닥 경계선 -->
+      <line x1="0" y1="620" x2="430" y2="620" stroke="#cfc6b8" stroke-width="1.5"/>
+      <!-- 창문 왼쪽 빛 -->
+      <rect x="-10" y="80" width="120" height="380" rx="8" fill="rgba(255,252,240,0.35)"/>
+      <line x1="50" y1="80" x2="50" y2="460" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <!-- 빛 반사 -->
+      <ellipse cx="60" cy="300" rx="80" ry="200" fill="rgba(255,252,235,0.18)"/>
+      <!-- 아치 장식 오른쪽 -->
+      <ellipse cx="430" cy="180" rx="220" ry="220" fill="none" stroke="rgba(210,200,188,0.5)" stroke-width="2"/>
+      <ellipse cx="430" cy="180" rx="270" ry="270" fill="none" stroke="rgba(210,200,188,0.28)" stroke-width="1.2"/>
+      <!-- 벽 액자 -->
+      <rect x="280" y="120" width="110" height="140" rx="6" fill="#e8e0d4" stroke="#d4c9b8" stroke-width="1.5"/>
+      <rect x="290" y="130" width="90" height="120" rx="3" fill="#ddd4c4"/>
+      <ellipse cx="335" cy="190" rx="28" ry="20" fill="#c8b898" opacity="0.6"/>
+      <rect x="305" y="200" width="60" height="30" rx="3" fill="#b8a888" opacity="0.4"/>
+      <!-- 소파 -->
+      <rect x="-20" y="510" width="280" height="120" rx="20" fill="#d8cfbf"/>
+      <rect x="-20" y="480" width="280" height="50" rx="14" fill="#cdc4b4"/>
+      <rect x="-20" y="500" width="40" height="130" rx="10" fill="#c8bfaf"/>
+      <rect x="220" y="500" width="40" height="130" rx="10" fill="#c8bfaf"/>
+      <!-- 소파 쿠션 -->
+      <rect x="5" y="488" width="80" height="52" rx="10" fill="#d4c8b4"/>
+      <rect x="95" y="488" width="80" height="52" rx="10" fill="#ccc0ac"/>
+      <rect x="185" y="488" width="75" height="52" rx="10" fill="#d4c8b4"/>
+      <!-- 소파 다리 -->
+      <rect x="10" y="625" width="16" height="20" rx="4" fill="#b0a890"/>
+      <rect x="215" y="625" width="16" height="20" rx="4" fill="#b0a890"/>
+      <!-- 러그 -->
+      <ellipse cx="160" cy="660" rx="180" ry="40" fill="#d4cabb" opacity="0.5"/>
+      <ellipse cx="160" cy="660" rx="155" ry="32" fill="none" stroke="#c4baa8" stroke-width="1" opacity="0.4"/>
+      <!-- 커피 테이블 -->
+      <rect x="60" y="620" width="200" height="50" rx="10" fill="#c8bca8"/>
+      <rect x="80" y="668" width="12" height="28" rx="4" fill="#b8ac98"/>
+      <rect x="228" y="668" width="12" height="28" rx="4" fill="#b8ac98"/>
+      <!-- 테이블 위 오브젝트 -->
+      <ellipse cx="120" cy="618" rx="18" ry="6" fill="#d8d0c0" opacity="0.7"/>
+      <rect x="114" y="590" width="12" height="28" rx="2" fill="#e0d4b8" opacity="0.8"/>
+      <circle cx="200" cy="616" r="8" fill="#c8b898" opacity="0.6"/>
+      <!-- 식물 오른쪽 -->
+      <rect x="360" y="540" width="28" height="80" rx="4" fill="#b8a888" opacity="0.7"/>
+      <ellipse cx="374" cy="450" rx="50" ry="100" fill="#7a9870" opacity="0.4"/>
+      <ellipse cx="350" cy="420" rx="35" ry="70" fill="#8aaa78" opacity="0.35"/>
+      <ellipse cx="398" cy="430" rx="32" ry="65" fill="#7a9870" opacity="0.3"/>
+      <ellipse cx="374" cy="395" rx="25" ry="50" fill="#6a8860" opacity="0.35"/>
+      <!-- 이사 박스들 오른쪽 -->
+      <rect x="320" y="560" width="90" height="70" rx="6" fill="#d4c4a0" opacity="0.7"/>
+      <rect x="330" y="540" width="70" height="60" rx="6" fill="#c8b890" opacity="0.65"/>
+      <rect x="338" y="522" width="55" height="52" rx="5" fill="#bfaf88" opacity="0.6"/>
+      <line x1="320" y1="560" x2="410" y2="560" stroke="#b0a070" stroke-width="1" opacity="0.35"/>
+      <line x1="330" y1="540" x2="400" y2="540" stroke="#b0a070" stroke-width="1" opacity="0.3"/>
+      <line x1="365" y1="522" x2="365" y2="574" stroke="#b0a070" stroke-width="0.8" opacity="0.3"/>
+      <!-- 부드러운 상단 페이드 -->
+      <rect width="430" height="160" fill="url(#fadeTop)"/>
+      <defs>
+        <linearGradient id="fadeTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f2ece4" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#f2ece4" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="auth-bg-overlay"></div>
+  </div>
+
+  <!-- 콘텐츠 -->
+  <div class="auth-content">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">📦</div>
+      <div class="auth-logo-text">MOVA</div>
+    </div>
+    <div class="auth-logo-sub">스마트 이사 어시스턴트</div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">로그인</button>
+        <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">회원가입</button>
+      </div>
+
+      <!-- 로그인 폼 -->
+      <div id="loginForm">
+        <div class="auth-title">다시 만나요 👋</div>
+        <div class="auth-sub">이메일로 로그인하세요</div>
+        <div class="auth-error" id="loginError"></div>
+        <div class="field-group">
+          <div class="field-label">이메일</div>
+          <div class="field-input-wrap">
+            <span class="field-icon">✉️</span>
+            <input class="field-input" type="email" id="loginEmail" placeholder="name@email.com">
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">비밀번호</div>
+          <div class="field-input-wrap">
+            <span class="field-icon">🔒</span>
+            <input class="field-input" type="password" id="loginPw" placeholder="••••••••">
+          </div>
+        </div>
+        <button class="btn-primary" id="loginBtn" onclick="handleLogin()">로그인</button>
+        <div class="auth-divider">또는</div>
+        <div class="social-row">
+          <button class="social-btn" onclick="handleGoogleLogin()">G 구글로 로그인</button>
+          <button class="social-btn" onclick="handleMagicLink()">✉️ 이메일 링크</button>
+        </div>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <div id="signupForm" style="display:none">
+        <div class="auth-title">시작해봐요 🚀</div>
+        <div class="auth-sub">무료로 계정을 만들어요</div>
+        <div class="auth-error" id="signupError"></div>
+        <div class="field-group">
+          <div class="field-label">어떤 분이세요?</div>
+          <div class="role-grid">
+            <div class="role-btn selected" id="roleUser" onclick="selectRole('user')">
+              <div class="role-emoji">🏠</div>
+              <div class="role-title">이사 준비 중</div>
+              <div class="role-desc">AI 최적화 공간배치<br>이사 라벨링 서비스<br>견적 받기</div>
+            </div>
+            <div class="role-btn partner" id="rolePartner" onclick="selectRole('partner')">
+              <div class="role-emoji">🚚</div>
+              <div class="role-title">이사업체</div>
+              <div class="role-desc">견적 제출<br>일정 관리<br>QR 작업 확인</div>
+            </div>
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">이름</div>
+          <input class="field-input no-icon" type="text" id="signupName" placeholder="홍길동">
+        </div>
+        <div class="field-group">
+          <div class="field-label">이메일</div>
+          <div class="field-input-wrap">
+            <span class="field-icon">✉️</span>
+            <input class="field-input" type="email" id="signupEmail" placeholder="name@email.com">
+          </div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">비밀번호 (6자 이상)</div>
+          <div class="field-input-wrap">
+            <span class="field-icon">🔒</span>
+            <input class="field-input" type="password" id="signupPw" placeholder="••••••••">
+          </div>
+        </div>
+        <button class="btn-primary" id="signupBtn" onclick="handleSignup()">회원가입</button>
+        <div class="auth-divider">또는</div>
+        <div class="social-row">
+          <button class="social-btn" onclick="handleGoogleLogin()">G 구글로 시작</button>
+          <button class="social-btn" onclick="handleMagicLink()">✉️ 이메일 링크</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-footer-txt">
+      <span class="auth-footer-icon">🔒</span>안전하고 편리한 이사, MOVA가 함께해요
+    </div>
+  </div>
+</div>
+
+<!-- ====== PARTNER HOME ====== -->
+<div class="screen" id="partnerHome">
+  <div class="partner-header">
+    <div class="home-header-top" style="margin-bottom:16px">
+      <div class="home-logo" style="color:white">MOVA</div>
+      <div class="user-badge" onclick="handleLogout()" id="partnerBadge">
+        <div class="user-avatar" id="partnerAvatar">?</div>
+        <div class="user-name" id="partnerName">로딩중</div>
+      </div>
+    </div>
+    <div class="partner-badge">🚚 이사업체 파트너</div>
+    <div style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:white;letter-spacing:-0.5px">
+      오늘의 <span style="color:#7ab3f5">견적 요청</span>
+    </div>
+  </div>
+
+  <div class="scrollable">
+    <!-- 통계 -->
+    <div class="section-label">오늘 현황</div>
+    <div class="partner-stat-card">
+      <div class="partner-stat-row">
+        <div class="psr-label">새 견적 요청</div>
+        <div class="psr-val accent">3건</div>
+      </div>
+      <div class="partner-stat-row">
+        <div class="psr-label">이번 달 완료</div>
+        <div class="psr-val green">12건</div>
+      </div>
+      <div class="partner-stat-row">
+        <div class="psr-label">평균 평점</div>
+        <div class="psr-val">⭐ 4.8</div>
+      </div>
+    </div>
+
+    <!-- 빠른 액션 -->
+    <div class="section-label">빠른 메뉴</div>
+    <div class="partner-action-grid">
+      <div class="partner-action blue" onclick="showToast('견적 요청 목록')">
+        <div class="action-icon">📋</div>
+        <div class="action-title">견적 요청</div>
+        <div class="action-desc">새 요청 3건</div>
+      </div>
+      <div class="partner-action" onclick="showToast('작업 일정 관리')">
+        <div class="action-icon">📅</div>
+        <div class="action-title">작업 일정</div>
+        <div class="action-desc">일정 관리</div>
+      </div>
+      <div class="partner-action" onclick="goTo('qrScanner')">
+        <div class="action-icon">📷</div>
+        <div class="action-title">QR 스캔</div>
+        <div class="action-desc">배치 위치 확인</div>
+      </div>
+      <div class="partner-action" onclick="showToast('완료 처리')">
+        <div class="action-icon">✅</div>
+        <div class="action-title">완료 처리</div>
+        <div class="action-desc">작업 완료</div>
+      </div>
+    </div>
+
+    <!-- 새 견적 요청 -->
+    <div class="section-label">새 견적 요청</div>
+    <div class="request-card" onclick="showToast('견적 요청 상세')">
+      <div class="rc-top">
+        <div>
+          <div class="rc-title">강남구 → 마포구</div>
+          <div class="rc-info">3월 15일 · 방 3개 · 가구 12개</div>
+        </div>
+        <div class="rc-price">₩48만</div>
+      </div>
+      <div class="rc-tags">
+        <span class="rc-tag new">NEW</span>
+        <span class="rc-tag">반포장</span>
+        <span class="rc-tag">5층→3층</span>
+      </div>
+    </div>
+    <div class="request-card" onclick="showToast('견적 요청 상세')">
+      <div class="rc-top">
+        <div>
+          <div class="rc-title">서초구 → 송파구</div>
+          <div class="rc-info">3월 18일 · 방 2개 · 가구 8개</div>
+        </div>
+        <div class="rc-price">₩35만</div>
+      </div>
+      <div class="rc-tags">
+        <span class="rc-tag new">NEW</span>
+        <span class="rc-tag">일반</span>
+        <span class="rc-tag">2층→1층</span>
+      </div>
+    </div>
+    <div class="request-card" onclick="showToast('견적 요청 상세')" style="border-left-color:var(--green)">
+      <div class="rc-top">
+        <div>
+          <div class="rc-title">용산구 → 은평구</div>
+          <div class="rc-info">3월 20일 · 방 4개 · 가구 18개</div>
+        </div>
+        <div class="rc-price">₩62만</div>
+      </div>
+      <div class="rc-tags">
+        <span class="rc-tag new">NEW</span>
+        <span class="rc-tag">포장이사</span>
+        <span class="rc-tag">엘리베이터</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goTo('partnerHome')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="showToast('견적 요청')"><div class="nav-icon">📋</div><div class="nav-label">견적</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('qrScanner')"><div class="nav-icon">📷</div><div class="nav-label">QR스캔</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="showToast('일정 관리')"><div class="nav-icon">📅</div><div class="nav-label">일정</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== QR SCANNER ====== -->
+<div class="screen" id="qrScanner">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('partnerHome')"><div class="back-arrow">←</div><div class="back-label">홈으로</div></div>
+    <div class="page-title">QR 스캔</div>
+    <div class="page-sub">가구 라벨을 스캔해서 배치 위치 확인</div>
+  </div>
+  <div class="scrollable" style="display:flex;flex-direction:column;align-items:center;padding-top:32px">
+    <div style="width:220px;height:220px;border:3px solid var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg);margin-bottom:20px;position:relative">
+      <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:4px solid var(--accent);border-left:4px solid var(--accent);border-radius:4px 0 0 0"></div>
+      <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:4px solid var(--accent);border-right:4px solid var(--accent);border-radius:0 4px 0 0"></div>
+      <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:4px solid var(--accent);border-left:4px solid var(--accent);border-radius:0 0 0 4px"></div>
+      <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:4px solid var(--accent);border-right:4px solid var(--accent);border-radius:0 0 4px 0"></div>
+      <div style="text-align:center">
+        <div style="font-size:48px;margin-bottom:8px">📷</div>
+        <div style="font-size:13px;color:var(--muted)">카메라 준비 중...</div>
+      </div>
+    </div>
+    <div style="font-size:14px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.6">
+      가구에 붙여진 QR 라벨을<br>네모 안에 맞춰 스캔하세요
+    </div>
+    <button class="btn-primary" style="width:200px" onclick="showToast('📷 카메라 실제 연동은 앱 버전에서!')">카메라 열기</button>
+  </div>
+</div>
+
+<!-- ====== HOME ====== -->
+<div class="screen" id="home">
+  <div class="home-header">
+    <div class="home-header-top">
+      <div class="home-logo">MOVA</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="lang-btn" id="langBtn" onclick="toggleLang()">🇺🇸 EN</button>
+        <div class="user-badge" onclick="handleLogout()" id="userBadge">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <div class="user-name" id="userName">로딩중</div>
+        </div>
+      </div>
+    </div>
+    <div class="home-greeting" id="homeGreeting2">안녕하세요 👋</div>
+    <div class="home-name" id="homeGreeting">이사를 <span>스마트하게</span></div>
+  </div>
+  <div class="scrollable">
+    <div class="section-label">진행 중인 이사</div>
+    <div class="project-card" onclick="goTo('rooms')">
+      <div class="project-card-top">
+        <div><div class="project-title">강남 → 마포 이사</div><div class="project-date">📅 2025년 3월 15일</div></div>
+        <div class="status-badge status-ai">AI 배치 가능</div>
+      </div>
+      <div class="progress-steps">
+        <div class="ps done"></div><div class="ps done"></div><div class="ps active"></div><div class="ps"></div><div class="ps"></div>
+      </div>
+      <div class="ps-labels">
+        <span class="ps-label done">프로젝트</span>
+        <span class="ps-label done">방/가구</span>
+        <span class="ps-label active">AI배치</span>
+        <span class="ps-label">라벨</span>
+        <span class="ps-label">견적</span>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="statRooms">0</div><div class="stat-label">방 등록</div></div>
+      <div class="stat-card"><div class="stat-num" id="statFurn">0</div><div class="stat-label">가구 수</div></div>
+      <div class="stat-card"><div class="stat-num" id="statScore">—</div><div class="stat-label">AI 점수</div></div>
+    </div>
+    <div class="section-label">단계별 진행</div>
+    <div class="action-grid">
+      <div class="action-card" onclick="goTo('rooms')"><div class="action-icon">📐</div><div class="action-title">방 측정</div><div class="action-desc">공간 입력</div></div>
+      <div class="action-card" onclick="goTo('furniture')"><div class="action-icon">🛋️</div><div class="action-title">가구 등록</div><div class="action-desc">이사할 가구</div></div>
+      <div class="action-card accent" onclick="goTo('ailayout')"><div class="action-icon">✨</div><div class="action-title">AI 배치</div><div class="action-desc">자동 분석</div></div>
+      <div class="action-card green" onclick="goTo('quote')"><div class="action-icon">💰</div><div class="action-title">견적 받기</div><div class="action-desc">업체 비교</div></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('rooms')"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('ailayout')"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('labels')"><div class="nav-icon">🏷️</div><div class="nav-label">라벨</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('quote')"><div class="nav-icon">💰</div><div class="nav-label">견적</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== ROOMS ====== -->
+<div class="screen" id="rooms">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('home')"><div class="back-arrow">←</div><div class="back-label">홈으로</div></div>
+    <div class="page-title">방 설정</div>
+    <div class="page-sub">방 크기 입력 + 2D 배치</div>
+    <div class="fp-tabs" style="margin-top:12px;margin-bottom:0">
+      <button class="fp-tab active" id="roomTab1" onclick="switchRoomTab(1)">📐 방 목록</button>
+      <button class="fp-tab" id="roomTab2" onclick="switchRoomTab(2)">📸 도면 분석</button>
+      <button class="fp-tab" id="roomTab3" onclick="switchRoomTab(3)">🗺️ 2D 배치</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: 방 목록 -->
+  <div class="scrollable" id="roomTabContent1">
+    <div class="total-area-card">
+      <div><div class="total-area-label">전체 면적</div><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px">등록된 방 합계</div></div>
+      <div style="text-align:right"><div class="total-area-val" id="totalArea">0</div><div class="total-area-unit">㎡</div></div>
+    </div>
+    <div class="section-label">등록된 방</div>
+    <div class="room-list" id="roomList"><div style="text-align:center;padding:30px;color:var(--muted);font-size:14px">아직 등록된 방이 없어요 👆</div></div>
+    <div class="add-card" onclick="openRoomModal()"><div class="add-card-icon">＋</div><div class="add-card-text">방 추가하기</div></div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn-primary" onclick="goToFurn()" style="flex:1">다음: 가구 등록 →</button>
+      <button class="btn-secondary" onclick="switchRoomTab(3)" style="flex:1">🗺️ 2D 배치</button>
+    </div>
+  </div>
+
+  <!-- TAB 2: 도면 분석 -->
+  <div class="scrollable" id="roomTabContent2" style="display:none">
+    <div style="background:var(--white);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px">
+      <div style="font-size:15px;font-weight:700;color:var(--dark);margin-bottom:6px">📸 도면 사진 분석</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5">방 사진이나 도면을 올리면 AI가 크기와 형태를 자동으로 인식해요</div>
+    </div>
+
+    <div id="fpUploadArea" class="upload-area" onclick="document.getElementById('fpFileInput').click()">
+      <input type="file" id="fpFileInput" accept="image/*" style="display:none" onchange="handleFpFileSelect(event)">
+      <div style="font-size:36px;margin-bottom:10px">📸</div>
+      <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:4px">도면 또는 방 사진 올리기</div>
+      <div style="font-size:12px;color:var(--muted)">탭해서 사진 선택 또는 카메라로 찍기</div>
+    </div>
+
+    <div id="fpPreviewArea" style="display:none;margin-top:12px">
+      <img id="fpPreviewImg" style="width:100%;border-radius:12px;margin-bottom:12px;max-height:220px;object-fit:cover" src="" alt="">
+      <button class="btn-primary" id="fpAnalyzeBtn" onclick="analyzeFpPhoto()">✨ AI로 도면 분석하기</button>
+    </div>
+
+    <div id="fpAnalyzeLoading" style="display:none;text-align:center;padding:28px">
+      <div style="width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--muted)">AI가 도면을 분석 중이에요...</div>
+    </div>
+
+    <div id="fpAnalysisResult" style="display:none;margin-top:12px">
+      <div class="ai-result-card">
+        <div class="arc-title">✅ AI 분석 완료</div>
+        <div class="arc-grid">
+          <div class="arc-item"><div class="arc-val" id="fpW">—</div><div class="arc-label">가로 (cm)</div></div>
+          <div class="arc-item"><div class="arc-val" id="fpD">—</div><div class="arc-label">세로 (cm)</div></div>
+          <div class="arc-item"><div class="arc-val" id="fpArea">—</div><div class="arc-label">면적 (㎡)</div></div>
+          <div class="arc-item"><div class="arc-val" id="fpShape">—</div><div class="arc-label">형태</div></div>
+        </div>
+        <div class="arc-desc" id="fpDesc"></div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">방 형태 확인/수정</div>
+        <div class="shape-grid" id="fpShapeGrid">
+          <div class="shape-btn selected" onclick="selectFpShape(this,'rectangle')" data-shape="rectangle">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><rect x="1" y="1" width="34" height="24" fill="rgba(232,86,58,0.15)" stroke="#e8563a" stroke-width="1.5" rx="2"/></svg>
+            <div class="shape-label">직사각형</div>
+          </div>
+          <div class="shape-btn" onclick="selectFpShape(this,'square')" data-shape="square">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><rect x="5" y="0" width="26" height="26" fill="rgba(58,127,232,0.15)" stroke="#3a7fe8" stroke-width="1.5" rx="2"/></svg>
+            <div class="shape-label">정사각형</div>
+          </div>
+          <div class="shape-btn" onclick="selectFpShape(this,'L')" data-shape="L">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><polygon points="1,1 18,1 18,12 35,12 35,25 1,25" fill="rgba(45,182,125,0.15)" stroke="#2db67d" stroke-width="1.5"/></svg>
+            <div class="shape-label">ㄱ자형</div>
+          </div>
+          <div class="shape-btn" onclick="selectFpShape(this,'T')" data-shape="T">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><polygon points="1,1 35,1 35,12 22,12 22,25 14,25 14,12 1,12" fill="rgba(245,166,35,0.15)" stroke="#f5a623" stroke-width="1.5"/></svg>
+            <div class="shape-label">T자형</div>
+          </div>
+          <div class="shape-btn" onclick="selectFpShape(this,'triangle')" data-shape="triangle">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><polygon points="18,1 35,25 1,25" fill="rgba(155,89,182,0.15)" stroke="#9b59b6" stroke-width="1.5"/></svg>
+            <div class="shape-label">삼각형</div>
+          </div>
+          <div class="shape-btn" onclick="selectFpShape(this,'custom')" data-shape="custom">
+            <svg class="shape-svg-mini" viewBox="0 0 36 26"><ellipse cx="18" cy="13" rx="17" ry="12" fill="rgba(232,86,58,0.1)" stroke="#e8563a" stroke-width="1.5" stroke-dasharray="3,2"/></svg>
+            <div class="shape-label">기타</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn-primary" onclick="applyFpAnalysis()" style="flex:1">✅ 방에 적용하기</button>
+        <button class="btn-secondary" onclick="switchRoomTab(3)" style="flex:1">🗺️ 2D 배치 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: 2D 배치 -->
+  <div class="scrollable" id="roomTabContent3" style="display:none;padding:16px">
+
+    <div class="fp-toolbar">
+      <div class="fp-tool active" id="fpToolMove" onclick="fpSetTool('move')">✋ 이동</div>
+      <div class="fp-tool" id="fpToolRotate" onclick="fpSetTool('rotate')">🔄 회전</div>
+      <div class="fp-tool" id="fpToolDelete" onclick="fpSetTool('delete')">🗑️ 삭제</div>
+      <div class="fp-tool danger" onclick="fpClearAll()">전체삭제</div>
+      <div class="fp-tool" onclick="openRoomModal()">📐 방수정</div>
+    </div>
+
+    <div class="canvas-container" id="fpCanvasContainer">
+      <canvas id="fpCanvas" class="fp-canvas"></canvas>
+    </div>
+
+    <div class="fp-stats">
+      <div class="fp-stat" id="fpStatUsage"><div class="fp-stat-val">0%</div><div class="fp-stat-label">공간활용</div></div>
+      <div class="fp-stat" id="fpStatItems"><div class="fp-stat-val">0</div><div class="fp-stat-label">가구수</div></div>
+      <div class="fp-stat good" id="fpStatColl"><div class="fp-stat-val">✅</div><div class="fp-stat-label">충돌없음</div></div>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">가구 추가 (탭해서 배치)</div>
+    <div class="furn-palette-strip" id="fpFurnPalette"></div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn-primary" onclick="fpSaveLayout()" style="flex:1">💾 배치 저장</button>
+      <button class="btn-secondary" onclick="fpExport()">📤</button>
+    </div>
+  </div>
+
+  <div class="sel-panel" id="fpSelPanel">
+    <div class="sp-emoji" id="fpSpEmoji">🛋️</div>
+    <div class="sp-info">
+      <div class="sp-name" id="fpSpName">소파</div>
+      <div class="sp-pos" id="fpSpPos">위치: —</div>
+      <div class="sp-warn-txt" id="fpSpWarn">⚠️ 방 밖으로 벗어남!</div>
+    </div>
+    <div class="sp-btns">
+      <button class="sp-btn" onclick="fpRotateSelected()">🔄</button>
+      <button class="sp-btn danger" onclick="fpDeleteSelected()">✕</button>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item active"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('furniture')"><div class="nav-icon">🛋️</div><div class="nav-label">가구</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('ailayout')"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== FURNITURE ====== -->
+<div class="screen" id="furniture">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('rooms')"><div class="back-arrow">←</div><div class="back-label">방 측정으로</div></div>
+    <div class="page-title">가구 등록</div>
+    <div class="page-sub">이사할 가구를 모두 선택해요</div>
+  </div>
+  <div class="scrollable">
+    <div class="furn-filter" id="furnFilter">
+      <div class="filter-chip active" onclick="filterFurn('전체',this)">전체</div>
+      <div class="filter-chip" onclick="filterFurn('거실',this)">🛋️ 거실</div>
+      <div class="filter-chip" onclick="filterFurn('침실',this)">🛏️ 침실</div>
+      <div class="filter-chip" onclick="filterFurn('주방',this)">🍳 주방</div>
+      <div class="filter-chip" onclick="filterFurn('서재',this)">📚 서재</div>
+      <div class="filter-chip" onclick="filterFurn('기타',this)">📦 기타</div>
+    </div>
+    <div class="furn-grid" id="furnGrid"></div>
+    <div style="height:60px"></div>
+  </div>
+  <div class="furn-count-bar" id="furnCountBar">
+    <div class="furn-count-text"><span id="furnCount">0</span>개 선택됨</div>
+    <button class="furn-next-btn" onclick="goTo('ailayout')">AI 배치 →</button>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('rooms')"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item active"><div class="nav-icon">🛋️</div><div class="nav-label">가구</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('ailayout')"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== AI LAYOUT ====== -->
+<div class="screen" id="ailayout">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('furniture')"><div class="back-arrow">←</div><div class="back-label">가구 등록으로</div></div>
+    <div class="page-title">AI 배치 분석</div>
+    <div class="page-sub">Claude AI가 최적 배치를 제안해요</div>
+  </div>
+  <div class="scrollable" id="aiContent">
+    <!-- 초기 상태 -->
+    <div id="aiInitial">
+      <div style="background:var(--white);border-radius:20px;padding:24px;box-shadow:var(--shadow);margin-bottom:16px">
+        <div style="font-size:32px;margin-bottom:12px">✨</div>
+        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--dark);margin-bottom:8px">AI 가구 배치 분석</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.6">등록된 방과 가구 정보를 바탕으로 Claude AI가 각 방에 가장 적합한 배치를 제안해드려요. 동선, 공간 활용, 채광까지 고려한 전문적인 분석이에요.</div>
+      </div>
+      <div id="aiPreview" style="margin-bottom:16px"></div>
+      <button class="btn-primary" id="aiStartBtn" onclick="startAI()">✨ AI 배치 분석 시작</button>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">약 10~20초 소요됩니다</div>
+    </div>
+
+    <!-- 로딩 -->
+    <div id="aiLoadingDiv" style="display:none">
+      <div class="ai-loading">
+        <div class="ai-loading-ring"></div>
+        <div class="ai-loading-title">AI가 분석 중이에요...</div>
+        <div class="ai-loading-steps" id="aiSteps">
+          <div class="ai-step active" id="step1"><div class="ai-step-icon">📐</div>방과 가구 데이터 분석 중</div>
+          <div class="ai-step" id="step2"><div class="ai-step-icon">📏</div>공간 최적화 계산 중</div>
+          <div class="ai-step" id="step3"><div class="ai-step-icon">🔄</div>동선 및 채광 분석 중</div>
+          <div class="ai-step" id="step4"><div class="ai-step-icon">✅</div>배치 결과 생성 중</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="ai-result" id="aiResultDiv"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('rooms')"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item active"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('labels')"><div class="nav-icon">🏷️</div><div class="nav-label">라벨</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('quote')"><div class="nav-icon">💰</div><div class="nav-label">견적</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== LABELS ====== -->
+<div class="screen" id="labels">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('ailayout')"><div class="back-arrow">←</div><div class="back-label">AI 배치로</div></div>
+    <div class="page-title">이사 라벨</div>
+    <div class="page-sub">QR코드로 이사 작업 순서를 안내해요</div>
+  </div>
+  <div class="scrollable">
+    <div class="label-intro">
+      <div class="li-title">🏷️ 스마트 이사 라벨</div>
+      <div class="li-sub">라벨을 탭하면 QR코드 + 배치 위치 도면을 볼 수 있어요. QR을 스캔하면 가구 정보가 바로 나와요!</div>
+    </div>
+    <div class="label-list" id="labelList">
+      <div style="text-align:center;padding:30px;color:var(--muted);font-size:14px">AI 배치를 먼저 완료해주세요</div>
+    </div>
+    <button class="btn-primary" onclick="showToast('PDF 출력 준비 완료! (4단계에서 완성)')">📄 PDF로 출력하기</button>
+    <div style="margin-top:10px"><button class="btn-secondary" onclick="goTo('quote')">다음: 견적 받기 →</button></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('rooms')"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('ailayout')"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+    <div class="nav-item active"><div class="nav-icon">🏷️</div><div class="nav-label">라벨</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('quote')"><div class="nav-icon">💰</div><div class="nav-label">견적</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ====== QUOTE ====== -->
+<div class="screen" id="quote">
+  <div class="page-header">
+    <div class="back-row" onclick="goTo('labels')"><div class="back-arrow">←</div><div class="back-label">라벨로</div></div>
+    <div class="page-title">이사 견적</div>
+    <div class="page-sub">AI가 최적 업체를 비교해드려요</div>
+  </div>
+  <div class="scrollable">
+
+    <div class="quote-hero">
+      <div class="qh-tag">4단계 · 마지막</div>
+      <div class="qh-title">견적 비교</div>
+      <div class="qh-sub">가구 목록 기반 자동 산출</div>
+    </div>
+
+    <!-- 이사 정보 -->
+    <div class="section-label">이사 정보</div>
+    <div class="move-info-card">
+      <div class="mic-title">📍 이사 구간 & 조건</div>
+      <div class="addr-grid">
+        <div>
+          <div class="field-label">출발지</div>
+          <input class="field-input" type="text" id="fromAddr" placeholder="예) 강남구" value="강남구">
+        </div>
+        <div class="addr-arrow">→</div>
+        <div>
+          <div class="field-label">도착지</div>
+          <input class="field-input" type="text" id="toAddr" placeholder="예) 마포구" value="마포구">
+        </div>
+      </div>
+      <div class="floor-grid">
+        <div>
+          <div class="field-label">출발지 층수</div>
+          <select class="select-input" id="fromFloor">
+            <option>1층</option><option>2층</option><option>3층</option>
+            <option>4층</option><option selected>5층</option><option>6층 이상</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">도착지 층수</div>
+          <select class="select-input" id="toFloor">
+            <option>1층</option><option>2층</option><option selected>3층</option>
+            <option>4층</option><option>5층</option><option>6층 이상</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">이사 유형</div>
+        <select class="select-input" id="moveType">
+          <option>일반 이사 (포장 없음)</option>
+          <option selected>반포장 이사</option>
+          <option>포장 이사 (전체 포장)</option>
+          <option>원룸 이사</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 자동 요약 -->
+    <div class="section-label">이사 요약</div>
+    <div class="quote-summary-box" id="quoteSummaryBox">
+      <div class="qsb-row"><span>가구 수</span><span id="qFurnCount">—</span></div>
+      <div class="qsb-row"><span>총 부피 (추정)</span><span id="qVolume">—</span></div>
+      <div class="qsb-row"><span>집 면적</span><span id="qArea">—</span></div>
+      <div class="qsb-row"><span>예상 작업 시간</span><span id="qTime">—</span></div>
+    </div>
+
+    <!-- 견적 버튼 -->
+    <div id="quoteInitial">
+      <button class="btn-primary" onclick="getQuote()">💰 AI 견적 산출하기</button>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">등록된 가구 정보로 자동 계산해요 · 약 10초</div>
+    </div>
+
+    <!-- 로딩 -->
+    <div id="quoteLoading" style="display:none">
+      <div class="est-loading">
+        <div class="est-ring"></div>
+        <div class="est-text">AI가 업체 견적을 비교 중이에요...<br>잠시만 기다려주세요</div>
+      </div>
+    </div>
+
+    <!-- 결과 -->
+    <div id="quoteResult" style="display:none">
+      <div class="section-label">업체 견적 비교</div>
+      <div class="company-cards" id="companyCards"></div>
+      <button class="btn-primary" onclick="confirmBooking()">✅ 선택한 업체로 예약하기</button>
+      <div style="margin-top:10px"><button class="btn-secondary" onclick="resetQuote()">🔄 다시 견적받기</button></div>
+    </div>
+
+    <!-- 예약 완료 -->
+    <div id="bookingDone" style="display:none">
+      <div class="booking-done" id="bookingCard"></div>
+      <button class="btn-secondary" onclick="goTo('home')" style="margin-top:4px">🏠 홈으로 돌아가기</button>
+    </div>
+
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">홈</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('rooms')"><div class="nav-icon">📐</div><div class="nav-label">방</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('ailayout')"><div class="nav-icon">✨</div><div class="nav-label">AI배치</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goTo('labels')"><div class="nav-icon">🏷️</div><div class="nav-label">라벨</div><div class="nav-dot"></div></div>
+    <div class="nav-item active"><div class="nav-icon">💰</div><div class="nav-label">견적</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- LABEL DETAIL MODAL -->
+<div class="label-detail-overlay" id="labelDetailOverlay" onclick="closeLabelDetailOutside(event)">
+  <div class="label-detail-sheet" id="labelDetailSheet">
+    <div class="lds-handle"></div>
+    <div id="labelDetailContent"></div>
+  </div>
+</div>
+
+<!-- ROOM MODAL -->
+<div class="modal-overlay" id="roomModal" onclick="closeRoomModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">방 추가하기 📐</div>
+    <div class="field-group">
+      <div class="field-label">방 종류</div>
+      <div class="room-type-grid">
+        <div class="room-type-btn selected" onclick="selRoomType(this,'거실','🛋️','#e8563a')"><span class="rt-emoji">🛋️</span><span class="rt-label">거실</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'안방','🛏️','#3a7fe8')"><span class="rt-emoji">🛏️</span><span class="rt-label">안방</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'작은방','🪟','#2db67d')"><span class="rt-emoji">🪟</span><span class="rt-label">작은방</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'주방','🍳','#f5a623')"><span class="rt-emoji">🍳</span><span class="rt-label">주방</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'욕실','🚿','#9b59b6')"><span class="rt-emoji">🚿</span><span class="rt-label">욕실</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'서재','📚','#1a1a1a')"><span class="rt-emoji">📚</span><span class="rt-label">서재</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'창고','📦','#9a9a9a')"><span class="rt-emoji">📦</span><span class="rt-label">창고</span></div>
+        <div class="room-type-btn" onclick="selRoomType(this,'베란다','🌿','#27ae60')"><span class="rt-emoji">🌿</span><span class="rt-label">베란다</span></div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">가로 × 세로 × 높이 (cm)</div>
+      <div class="input-row">
+        <div class="input-unit"><input class="field-input" type="number" id="roomW" placeholder="가로" min="1"><span class="unit-label">cm</span></div>
+        <div class="input-unit"><input class="field-input" type="number" id="roomD" placeholder="세로" min="1"><span class="unit-label">cm</span></div>
+        <div class="input-unit"><input class="field-input" type="number" id="roomH" placeholder="높이" min="1" value="240"><span class="unit-label">cm</span></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addRoom()" style="margin-top:8px">방 추가하기</button>
+    <button class="btn-secondary" onclick="closeRoomModal()" style="margin-top:10px">취소</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://coowadgtojnfevoftfmm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hIAdv9KydyCpT-oXy3NKSQ_CEsyZka-';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+
+// 앱 시작 시 로그인 상태 확인
+async function initAuth() {
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      onLoginSuccess(currentUser);
+    }
+    // 로그인 안 돼있으면 authscreen이 이미 active라서 그냥 둠
+
+    sbClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        onLoginSuccess(currentUser);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        goTo('authscreen');
+      }
+    });
+  } catch(e) {
+    console.error('Auth init error:', e);
+  }
+}
+
+function onLoginSuccess(user) {
+  const name = user.user_metadata?.name || user.email?.split('@')[0] || '사용자';
+  const role = user.user_metadata?.role || 'user';
+  const initial = name.charAt(0).toUpperCase();
+
+  if (role === 'partner') {
+    // 이사업체 화면
+    document.getElementById('partnerAvatar').textContent = initial;
+    document.getElementById('partnerName').textContent = name;
+    goTo('partnerHome');
+    showToast(`🚚 ${name}님 환영해요!`);
+  } else {
+    // 일반 사용자 화면
+    document.getElementById('userAvatar').textContent = initial;
+    document.getElementById('userName').textContent = name;
+    document.getElementById('homeGreeting').innerHTML = `${name}님의 <span>이사</span>`;
+    goTo('home');
+    loadUserData();
+    showToast(`👋 ${name}님 환영해요!`);
+  }
+}
+
+// ── LOGIN ──
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  if (!email || !pw) { showAuthError('login', '이메일과 비밀번호를 입력해주세요'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  const { error } = await sbClient.auth.signInWithPassword({ email, password: pw });
+  btn.textContent = '로그인'; btn.disabled = false;
+  if (error) showAuthError('login', error.message === 'Invalid login credentials' ? '이메일 또는 비밀번호가 틀렸어요' : error.message);
+}
+
+// ── SIGNUP ──
+async function handleSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPw').value;
+  if (!name || !email || !pw) { showAuthError('signup', '모든 항목을 입력해주세요'); return; }
+  if (pw.length < 6) { showAuthError('signup', '비밀번호는 6자 이상이어야 해요'); return; }
+  const btn = document.getElementById('signupBtn');
+  btn.textContent = '가입 중...'; btn.disabled = true;
+  const { error } = await sbClient.auth.signUp({
+    email, password: pw,
+    options: { data: { name, role: selectedRole } }
+  });
+  btn.textContent = '회원가입'; btn.disabled = false;
+  if (error) { showAuthError('signup', error.message); return; }
+  showToast(selectedRole === 'partner' ? '🚚 이사업체로 가입됐어요!' : '✅ 가입됐어요! 로그인해주세요');
+}
+
+// ── GOOGLE LOGIN ──
+async function handleGoogleLogin() {
+  await sbClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+}
+
+// ── MAGIC LINK ──
+async function handleMagicLink() {
+  const email = document.getElementById('loginEmail').value.trim() || document.getElementById('signupEmail').value.trim();
+  if (!email) { showAuthError('login', '이메일을 먼저 입력해주세요'); return; }
+  const { error } = await sbClient.auth.signInWithOtp({ email });
+  if (error) { showAuthError('login', error.message); return; }
+  showToast('✉️ 로그인 링크를 이메일로 보냈어요!');
+}
+
+// ── LOGOUT ──
+async function handleLogout() {
+  if (!confirm('로그아웃 하시겠어요?')) return;
+  await saveUserData();
+  await sbClient.auth.signOut();
+  rooms = []; selectedFurn.clear(); aiResult = null; quoteData = null;
+  showToast('로그아웃 됐어요');
+}
+
+function showAuthError(type, msg) {
+  const el = document.getElementById(type === 'login' ? 'loginError' : 'signupError');
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function switchTab(tab) {
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+}
+
+// ── SAVE / LOAD DATA ──
+async function saveUserData() {
+  if (!currentUser) return;
+  try {
+    const data = {
+      user_id: currentUser.id,
+      rooms: JSON.stringify(rooms),
+      furniture: JSON.stringify([...selectedFurn]),
+      ai_result: aiResult ? JSON.stringify(aiResult) : null,
+      updated_at: new Date().toISOString()
+    };
+    await sbClient.from('mova_projects').upsert(data, { onConflict: 'user_id' });
+    showToast('💾 저장됐어요');
+  } catch(e) { console.error('저장 오류:', e); }
+}
+
+async function loadUserData() {
+  if (!currentUser) return;
+  try {
+    const { data } = await sbClient.from('mova_projects').select('*').eq('user_id', currentUser.id).single();
+    if (data) {
+      if (data.rooms) rooms = JSON.parse(data.rooms);
+      if (data.furniture) JSON.parse(data.furniture).forEach(id => selectedFurn.add(id));
+      if (data.ai_result) { aiResult = JSON.parse(data.ai_result); generateLabels(aiResult); }
+      renderRooms(); renderFurniture(); updateFurnBar(); updateHomeStats();
+      if (rooms.length > 0) showToast('📂 이전 데이터를 불러왔어요!');
+    }
+  } catch(e) { console.log('저장된 데이터 없음'); }
+}
+
+// ── ROLE SELECTION ──
+let selectedRole = 'user';
+
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('roleUser').classList.toggle('selected', role === 'user');
+  document.getElementById('rolePartner').classList.toggle('selected', role === 'partner');
+}
+
+// ── STATE ──
+let rooms = [];
+let selectedFurn = new Set();
+let selRoomTypeData = { name:'거실', emoji:'🛋️', color:'#e8563a' };
+let currentFilter = '전체';
+let aiResult = null;
+
+const FURNITURE = [
+  {id:1,emoji:'🛋️',name:'3인 소파',dim:'220×90cm',room:'거실',w:220,d:90},
+  {id:2,emoji:'📺',name:'TV 장식장',dim:'180×45cm',room:'거실',w:180,d:45},
+  {id:3,emoji:'☕',name:'커피 테이블',dim:'100×60cm',room:'거실',w:100,d:60},
+  {id:4,emoji:'🪑',name:'1인 의자',dim:'80×80cm',room:'거실',w:80,d:80},
+  {id:5,emoji:'🛏️',name:'퀸 침대',dim:'160×200cm',room:'침실',w:160,d:200},
+  {id:6,emoji:'🛏️',name:'싱글 침대',dim:'100×200cm',room:'침실',w:100,d:200},
+  {id:7,emoji:'🪞',name:'옷장',dim:'120×55cm',room:'침실',w:120,d:55},
+  {id:8,emoji:'🪟',name:'화장대',dim:'100×45cm',room:'침실',w:100,d:45},
+  {id:9,emoji:'🍽️',name:'식탁 (4인)',dim:'140×80cm',room:'주방',w:140,d:80},
+  {id:10,emoji:'🪑',name:'식탁 의자',dim:'45×45cm',room:'주방',w:45,d:45},
+  {id:11,emoji:'🫙',name:'주방 수납장',dim:'90×45cm',room:'주방',w:90,d:45},
+  {id:12,emoji:'🖥️',name:'컴퓨터 책상',dim:'140×60cm',room:'서재',w:140,d:60},
+  {id:13,emoji:'💺',name:'사무용 의자',dim:'60×60cm',room:'서재',w:60,d:60},
+  {id:14,emoji:'📚',name:'책장',dim:'90×30cm',room:'서재',w:90,d:30},
+  {id:15,emoji:'🧺',name:'세탁기',dim:'60×60cm',room:'기타',w:60,d:60},
+  {id:16,emoji:'❄️',name:'냉장고',dim:'70×75cm',room:'기타',w:70,d:75},
+  {id:17,emoji:'📦',name:'수납박스',dim:'50×40cm',room:'기타',w:50,d:40},
+  {id:18,emoji:'🌿',name:'화분',dim:'40×40cm',room:'기타',w:40,d:40},
+];
+
+// ── NAV ──
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='ailayout') refreshAIPreview();
+  if(id==='home') updateHomeStats();
+  if(id==='quote') updateQuoteSummary();
+  window.scrollTo(0,0);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── ROOMS ──
+function openRoomModal() {
+  selRoomType(document.querySelector('.room-type-btn'),'거실','🛋️','#e8563a');
+  document.getElementById('roomW').value='';
+  document.getElementById('roomD').value='';
+  document.getElementById('roomH').value='240';
+  document.getElementById('roomModal').classList.add('open');
+}
+function closeRoomModal(){document.getElementById('roomModal').classList.remove('open')}
+function closeRoomModalOutside(e){if(e.target.id==='roomModal')closeRoomModal()}
+function selRoomType(el,name,emoji,color){
+  document.querySelectorAll('.room-type-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  selRoomTypeData={name,emoji,color};
+}
+function addRoom(){
+  const w=parseInt(document.getElementById('roomW').value);
+  const d=parseInt(document.getElementById('roomD').value);
+  const h=parseInt(document.getElementById('roomH').value)||240;
+  if(!w||!d){showToast('가로와 세로를 입력해주세요');return}
+  if(w<50||d<50){showToast('최소 50cm 이상 입력해주세요');return}
+  rooms.push({...selRoomTypeData,w,d,h,id:Date.now()});
+  closeRoomModal();
+  renderRooms(); updateHomeStats();
+  showToast(`✅ ${selRoomTypeData.emoji} ${selRoomTypeData.name} 추가됨`);
+}
+function deleteRoom(id){
+  rooms=rooms.filter(r=>r.id!==id);
+  renderRooms(); updateHomeStats();
+  showToast('방이 삭제됐어요');
+}
+function renderRooms(){
+  const list=document.getElementById('roomList');
+  if(rooms.length===0){
+    list.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:14px">아직 등록된 방이 없어요 👆</div>';
+    document.getElementById('totalArea').textContent='0'; return;
+  }
+  const total=rooms.reduce((s,r)=>s+r.w*r.d/10000,0);
+  document.getElementById('totalArea').textContent=total.toFixed(1);
+  list.innerHTML=rooms.map(r=>`
+    <div class="room-card">
+      <div class="room-color-bar" style="background:${r.color}"></div>
+      <div class="room-emoji">${r.emoji}</div>
+      <div class="room-info"><div class="room-name">${r.name}</div><div class="room-dims">${r.w}×${r.d}×${r.h}cm</div></div>
+      <div class="room-area">${(r.w*r.d/10000).toFixed(1)}㎡</div>
+      <button class="room-delete" onclick="deleteRoom(${r.id})">✕</button>
+    </div>`).join('');
+}
+function goToFurn(){
+  if(rooms.length===0){showToast('방을 먼저 추가해주세요 📐');return}
+  goTo('furniture');
+}
+
+// ── FURNITURE ──
+function renderFurniture(filter='전체'){
+  const filtered=filter==='전체'?FURNITURE:FURNITURE.filter(f=>f.room===filter);
+  document.getElementById('furnGrid').innerHTML=filtered.map(f=>`
+    <div class="furn-card ${selectedFurn.has(f.id)?'selected':''}" onclick="toggleFurn(${f.id})">
+      <div class="furn-check">✓</div>
+      <div class="furn-emoji">${f.emoji}</div>
+      <div class="furn-name">${f.name}</div>
+      <div class="furn-dim">${f.dim}</div>
+      <div class="furn-room-tag">${f.room}</div>
+    </div>`).join('');
+}
+function toggleFurn(id){
+  if(selectedFurn.has(id))selectedFurn.delete(id);
+  else selectedFurn.add(id);
+  renderFurniture(currentFilter); updateFurnBar(); updateHomeStats();
+}
+function updateFurnBar(){
+  const count=selectedFurn.size;
+  document.getElementById('furnCount').textContent=count;
+  document.getElementById('furnCountBar').classList.toggle('visible',count>0);
+}
+function filterFurn(cat,el){
+  currentFilter=cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderFurniture(cat);
+}
+function updateHomeStats(){
+  document.getElementById('statRooms').textContent=rooms.length;
+  document.getElementById('statFurn').textContent=selectedFurn.size;
+  if(aiResult) document.getElementById('statScore').textContent=aiResult.score+'점';
+}
+
+// ── AI PREVIEW ──
+function refreshAIPreview(){
+  const sel=FURNITURE.filter(f=>selectedFurn.has(f.id));
+  const preview=document.getElementById('aiPreview');
+  if(!preview)return;
+  if(rooms.length===0&&sel.length===0){
+    preview.innerHTML=`<div style="background:var(--yellow-light);border-radius:16px;padding:16px;font-size:13px;color:var(--dark2);line-height:1.6">⚠️ 방과 가구를 먼저 등록해주세요. 방 측정 → 가구 등록 순서로 진행해요.</div>`;
+    return;
+  }
+  preview.innerHTML=`
+    <div style="background:var(--white);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">분석 대상</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${rooms.map(r=>`<div style="background:var(--bg);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--dark2)">${r.emoji} ${r.name} <span style="color:var(--accent)">${(r.w*r.d/10000).toFixed(1)}㎡</span></div>`).join('')}
+        ${sel.map(f=>`<div style="background:var(--bg);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--dark2)">${f.emoji} ${f.name}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── AI ANALYSIS ──
+async function startAI(){
+  if(rooms.length===0){showToast('방을 먼저 등록해주세요 📐');goTo('rooms');return}
+  const sel=FURNITURE.filter(f=>selectedFurn.has(f.id));
+  if(sel.length===0){showToast('가구를 먼저 선택해주세요 🛋️');goTo('furniture');return}
+
+  document.getElementById('aiInitial').style.display='none';
+  document.getElementById('aiLoadingDiv').style.display='block';
+
+  // 로딩 애니메이션
+  const steps=['step1','step2','step3','step4'];
+  let stepIdx=0;
+  const stepTimer=setInterval(()=>{
+    if(stepIdx>0) document.getElementById(steps[stepIdx-1]).classList.replace('active','done');
+    if(stepIdx<steps.length){ document.getElementById(steps[stepIdx]).classList.add('active'); stepIdx++; }
+  },1800);
+
+  try {
+    const roomDesc=rooms.map(r=>`${r.name}(${r.w}×${r.d}cm, ${(r.w*r.d/10000).toFixed(1)}㎡)`).join(', ');
+    const furnDesc=sel.map(f=>`${f.name}(${f.w}×${f.d}cm, ${f.room})`).join(', ');
+
+    const prompt=`인테리어 전문가입니다. 방과 가구 배치를 JSON으로만 답하세요 (마크다운 없이, 설명 없이).
+
+방: ${roomDesc}
+가구: ${furnDesc}
+
+반드시 아래 형식 그대로:
+{"score":85,"grade":"A","summary":"전체 요약 2문장","highlights":["좋은점1","좋은점2","주의사항"],"rooms":[{"name":"방이름","emoji":"이모지","score":88,"furniture":[{"name":"가구","emoji":"이모지","position":"위치","reason":"이유"}],"tip":"팁"}],"order":[{"name":"가구","emoji":"이모지","dest":"방과위치","seq":1}]}`;
+
+    const response=await fetch('/api/analyze-layout',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        rooms: rooms.map(r=>({name:r.name,w:r.w,d:r.d,room:r.room})),
+        furniture: sel.map(f=>({name:f.name,w:f.w,d:f.d,room:f.room}))
+      })
+    });
+
+    clearInterval(stepTimer);
+    steps.forEach(s=>document.getElementById(s).classList.remove('active'));
+    document.getElementById(steps[steps.length-1]).classList.add('done');
+
+    const data=await response.json();
+    if(data.error) throw new Error(data.error);
+    aiResult = data;
+
+    await new Promise(r=>setTimeout(r,600));
+    document.getElementById('aiLoadingDiv').style.display='none';
+    renderAIResult(aiResult, sel);
+    updateHomeStats();
+    generateLabels(aiResult);
+
+  } catch(err) {
+    clearInterval(stepTimer);
+    document.getElementById('aiLoadingDiv').style.display='none';
+    document.getElementById('aiInitial').style.display='block';
+    showToast('분석 오류가 발생했어요. 다시 시도해주세요');
+    console.error(err);
+  }
+}
+
+function renderAIResult(data, sel){
+  const resultDiv=document.getElementById('aiResultDiv');
+  resultDiv.classList.add('show');
+
+  const gradeColor=data.score>=90?'var(--green)':data.score>=75?'var(--blue)':'var(--yellow)';
+
+  const highlightHtml=data.highlights.map((h,i)=>`
+    <div class="ih-chip ${i<2?'good':'warn'}">${i<2?'✓':'⚠'} ${h}</div>`).join('');
+
+  const roomsHtml=data.rooms.map(room=>`
+    <div class="rl-card" onclick="this.classList.toggle('expanded')">
+      <div class="rl-header">
+        <div class="rl-emoji">${room.emoji}</div>
+        <div class="rl-info">
+          <div class="rl-name">${room.name}</div>
+          <div class="rl-count">${room.furniture.length}개 가구 배치</div>
+        </div>
+        <div class="rl-score" style="color:${room.score>=85?'var(--green)':'var(--blue)'}">${room.score}점</div>
+        <div class="rl-toggle">▼</div>
+      </div>
+      <div class="rl-detail">
+        ${room.furniture.map(f=>`
+          <div class="rl-furn-item">
+            <div class="rl-furn-emoji">${f.emoji}</div>
+            <div class="rl-furn-info">
+              <div class="rl-furn-name">${f.name}</div>
+              <div class="rl-furn-pos">📍 ${f.position}</div>
+              <div class="rl-furn-pos" style="color:var(--muted)">${f.reason}</div>
+            </div>
+          </div>`).join('')}
+        <div class="rl-tip"><span class="rl-tip-icon">💡</span>${room.tip}</div>
+      </div>
+    </div>`).join('');
+
+  resultDiv.innerHTML=`
+    <div class="score-hero">
+      <div class="score-label">AI 배치 점수</div>
+      <div class="score-val">${data.score}<span>/100</span></div>
+      <div class="score-grade">⭐ ${data.grade}등급 배치</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-tag">✨ AI 분석 요약</div>
+      <div class="insight-text">${data.summary}</div>
+      <div class="insight-highlights">${highlightHtml}</div>
+    </div>
+    <div class="section-label">방별 상세 배치</div>
+    <div class="room-layout-list">${roomsHtml}</div>
+    <div class="next-card" onclick="goTo('labels')">
+      <div><div class="nc-label">다음 단계</div><div class="nc-title">라벨 생성하기 →</div></div>
+      <div class="nc-arrow">🏷️</div>
+    </div>
+    <button class="btn-secondary" onclick="resetAI()" style="margin-bottom:8px">🔄 다시 분석하기</button>`;
+}
+
+function resetAI(){
+  aiResult=null;
+  const resultDiv=document.getElementById('aiResultDiv');
+  resultDiv.classList.remove('show');
+  resultDiv.innerHTML='';
+  document.getElementById('aiInitial').style.display='block';
+  refreshAIPreview();
+  document.getElementById('statScore').textContent='—';
+}
+
+// ── LABELS ──
+let labelData = [];
+
+function generateLabels(data){
+  const list = document.getElementById('labelList');
+  if(!data || !data.order || data.order.length === 0){
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:14px">AI 배치 완료 후 라벨이 생성돼요</div>';
+    return;
+  }
+
+  labelData = data.order;
+
+  list.innerHTML = data.order.map((item, i) => `
+    <div class="label-item" onclick="openLabelDetail(${i})">
+      <div class="qr-real" id="qr-thumb-${i}"></div>
+      <div class="label-info" style="flex:1">
+        <div class="label-name">${item.emoji} ${item.name}</div>
+        <div class="label-dest">→ ${item.dest}</div>
+        <div class="label-order-num">작업 순서 #${item.seq}</div>
+      </div>
+      <div class="order-badge">${item.seq}</div>
+    </div>`).join('');
+
+  // 실제 QR 코드 생성 (각 가구 정보를 URL 형태로 인코딩)
+  setTimeout(() => {
+    data.order.forEach((item, i) => {
+      const qrText = buildQRText(item, i);
+      const el = document.getElementById('qr-thumb-' + i);
+      if(el) {
+        el.innerHTML = '';
+        try {
+          new QRCode(el, { text: qrText, width: 52, height: 52, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+        } catch(e) { el.innerHTML = '📦'; }
+      }
+    });
+  }, 100);
+}
+
+function buildQRText(item, idx) {
+  // 방법 1: 텍스트 정보 (스캔하면 바로 읽힘)
+  // 방법 2: 웹페이지 URL로 인코딩 (실제 서버 있으면 연결 가능)
+  // 지금은 data URI로 자체 웹페이지 생성
+  const info = [
+    'MOVA 이사 라벨',
+    '─────────────────',
+    `가구: ${item.emoji} ${item.name}`,
+    `위치: ${item.dest}`,
+    `작업 순서: ${item.seq}번`,
+    '─────────────────',
+    `이사일: ${new Date().toLocaleDateString('ko-KR')}`,
+    '앱: MOVA'
+  ].join('\n');
+  return info;
+}
+
+function openLabelDetail(idx) {
+  const item = labelData[idx];
+  if(!item) return;
+
+  const overlay = document.getElementById('labelDetailOverlay');
+  const content = document.getElementById('labelDetailContent');
+
+  // 해당 가구가 어느 방에 속하는지 찾기
+  let roomInfo = null;
+  if(aiResult && aiResult.rooms) {
+    for(const room of aiResult.rooms) {
+      const found = room.furniture.find(f => f.name === item.name);
+      if(found) { roomInfo = { room, furn: found }; break; }
+    }
+  }
+
+  content.innerHTML = `
+    <div class="lds-header">
+      <div class="lds-emoji">${item.emoji}</div>
+      <div>
+        <div class="lds-name">${item.name}</div>
+        <div class="lds-room">작업 순서 ${item.seq}번 · ${item.dest.split(' ')[0]}</div>
+      </div>
+    </div>
+
+    <div class="lds-qr-wrap">
+      <div class="lds-qr-box">
+        <div class="lds-qr-inner" id="qr-large-${idx}"></div>
+        <div class="lds-qr-label">📷 카메라로 스캔하세요</div>
+      </div>
+    </div>
+
+    <div class="lds-info-rows">
+      <div class="lds-info-row">
+        <div class="lds-info-icon">📍</div>
+        <div>
+          <div class="lds-info-label">배치 위치</div>
+          <div class="lds-info-val">${item.dest}</div>
+        </div>
+      </div>
+      ${roomInfo ? `
+      <div class="lds-info-row">
+        <div class="lds-info-icon">💡</div>
+        <div>
+          <div class="lds-info-label">배치 이유</div>
+          <div class="lds-info-val">${roomInfo.furn.reason || '공간 최적화를 위한 배치'}</div>
+        </div>
+      </div>` : ''}
+      <div class="lds-info-row">
+        <div class="lds-info-icon">🔢</div>
+        <div>
+          <div class="lds-info-label">작업 순서</div>
+          <div class="lds-info-val">${item.seq}번째로 반입해주세요</div>
+        </div>
+      </div>
+    </div>
+
+    ${renderMiniMap(item, roomInfo)}
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">📋 텍스트 정보 (방법 1)</div>
+      <div class="lds-text-copy" id="labelTextInfo-${idx}">${buildQRText(item, idx).replace(/\n/g,'<br>')}</div>
+    </div>
+
+    <button class="lds-copy-btn" onclick="copyLabelText(${idx})">📋 텍스트 복사하기</button>
+    <button class="lds-close-btn" onclick="closeLabelDetail()">닫기</button>
+  `;
+
+  overlay.classList.add('open');
+
+  // 큰 QR 생성
+  setTimeout(() => {
+    const el = document.getElementById('qr-large-' + idx);
+    if(el) {
+      el.innerHTML = '';
+      try {
+        new QRCode(el, {
+          text: buildQRText(item, idx),
+          width: 160, height: 160,
+          colorDark: '#1a1a1a', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch(e) { console.error(e); }
+    }
+  }, 100);
+}
+
+function renderMiniMap(item, roomInfo) {
+  if(!rooms || rooms.length === 0) return '';
+
+  const canvasW = 340, canvasH = 160;
+  const padding = 10;
+  const totalW = rooms.reduce((s,r) => s + r.w, 0);
+  const maxD = Math.max(...rooms.map(r => r.d));
+  const scaleX = (canvasW - padding*2) / totalW;
+  const scaleY = (canvasH - padding*2 - 20) / maxD;
+  const scale = Math.min(scaleX, scaleY);
+
+  let xOffset = padding;
+  const roomBlocks = rooms.map(r => {
+    const block = { ...r, px: xOffset, py: padding, pw: r.w * scale, ph: r.d * scale };
+    xOffset += block.pw + 4;
+    return block;
+  });
+
+  const colors = ['rgba(232,86,58,0.12)','rgba(58,127,232,0.12)','rgba(45,182,125,0.12)','rgba(245,166,35,0.12)'];
+  const borderColors = ['#e8563a','#3a7fe8','#2db67d','#f5a623'];
+
+  // 해당 가구가 배치될 방 찾기
+  const targetRoomName = roomInfo ? roomInfo.room.name : null;
+  const targetRoom = targetRoomName ? roomBlocks.find(r => r.name === targetRoomName) : null;
+
+  const roomSVGs = roomBlocks.map((r, i) => `
+    <rect x="${r.px}" y="${r.py}" width="${r.pw}" height="${r.ph}"
+      fill="${colors[i%colors.length]}" stroke="${borderColors[i%borderColors.length]}" stroke-width="1.5" rx="6"/>
+    <text x="${r.px + r.pw/2}" y="${r.py + r.ph/2 - 4}" text-anchor="middle" font-size="9" font-weight="700" fill="#666">${r.emoji}</text>
+    <text x="${r.px + r.pw/2}" y="${r.py + r.ph/2 + 8}" text-anchor="middle" font-size="8" fill="#999">${r.name}</text>
+  `).join('');
+
+  // 가구 위치 표시 (해당 방 중앙에 깜빡이는 마커)
+  const furnMarker = targetRoom ? `
+    <rect x="${targetRoom.px + targetRoom.pw*0.3}" y="${targetRoom.py + targetRoom.ph*0.25}"
+      width="${targetRoom.pw*0.4}" height="${targetRoom.ph*0.5}"
+      fill="rgba(232,86,58,0.25)" stroke="#e8563a" stroke-width="2" rx="4" stroke-dasharray="3,2">
+      <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
+    </rect>
+    <text x="${targetRoom.px + targetRoom.pw/2}" y="${targetRoom.py + targetRoom.ph/2 + 4}"
+      text-anchor="middle" font-size="14">${item.emoji}</text>
+  ` : '';
+
+  return `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase">🗺️ 배치 위치 도면 (방법 2)</div>
+      <div style="background:var(--bg);border-radius:14px;overflow:hidden;border:1px solid var(--border)">
+        <svg width="100%" viewBox="0 0 ${canvasW} ${canvasH}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+          ${roomSVGs}
+          ${furnMarker}
+        </svg>
+        <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)">
+          ${item.emoji} <strong style="color:var(--dark)">${item.name}</strong> → <span style="color:var(--accent)">${item.dest}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function copyLabelText(idx) {
+  const item = labelData[idx];
+  if(!item) return;
+  const text = buildQRText(item, idx);
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 텍스트가 복사됐어요!'));
+  } else {
+    showToast('📋 복사됐어요!');
+  }
+}
+
+function closeLabelDetail() {
+  document.getElementById('labelDetailOverlay').classList.remove('open');
+}
+function closeLabelDetailOutside(e) {
+  if(e.target.id === 'labelDetailOverlay') closeLabelDetail();
+}
+
+// ── QUOTE ──
+let quoteData = null;
+let selectedCompany = null;
+
+function updateQuoteSummary() {
+  const sel = FURNITURE.filter(f => selectedFurn.has(f.id));
+  const totalVol = sel.reduce((s, f) => s + (f.w * f.d * (f.h||80)) / 1000000, 0);
+  const totalArea = rooms.reduce((s, r) => s + r.w * r.d / 10000, 0);
+  const estTime = Math.max(2, Math.ceil(sel.length * 0.5 + totalVol * 0.3));
+  document.getElementById('qFurnCount').textContent = sel.length + '개';
+  document.getElementById('qVolume').textContent = totalVol.toFixed(1) + ' m³';
+  document.getElementById('qArea').textContent = totalArea.toFixed(1) + ' ㎡';
+  document.getElementById('qTime').textContent = '약 ' + estTime + '~' + (estTime + 2) + '시간';
+}
+
+async function getQuote() {
+  const sel = FURNITURE.filter(f => selectedFurn.has(f.id));
+  if (sel.length === 0) { showToast('가구를 먼저 등록해주세요 🛋️'); goTo('furniture'); return; }
+
+  document.getElementById('quoteInitial').style.display = 'none';
+  document.getElementById('quoteLoading').style.display = 'block';
+
+  try {
+    const from = document.getElementById('fromAddr').value || '출발지';
+    const to = document.getElementById('toAddr').value || '도착지';
+    const fromFloor = document.getElementById('fromFloor').value;
+    const toFloor = document.getElementById('toFloor').value;
+    const moveType = document.getElementById('moveType').value;
+    const furnDesc = sel.map(f => f.name).join(', ');
+    const totalVol = sel.reduce((s, f) => s + (f.w * f.d * (f.h||80)) / 1000000, 0).toFixed(1);
+
+    const prompt = `이사 견적 전문가입니다. 아래 정보로 3개 이사업체 견적을 제안해주세요.
+출발: ${from} ${fromFloor} / 도착: ${to} ${toFloor}
+유형: ${moveType} / 가구: ${furnDesc} / 총부피: ${totalVol}m³
+JSON만 응답(마크다운 없이):
+{"companies":[{"name":"업체명","emoji":"이모지","rating":4.8,"reviews":1203,"price":450000,"features":["특징1","특징2","특징3"],"best":true},{"name":"업체2","emoji":"이모지","rating":4.6,"reviews":892,"price":520000,"features":["특징1","특징2"],"best":false},{"name":"업체3","emoji":"이모지","rating":4.7,"reviews":654,"price":490000,"features":["특징1","특징2"],"best":false}],"tip":"견적 선택 팁 1-2문장"}`;
+
+    const res = await fetch('/api/get-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from, to, fromFloor, toFloor, moveType,
+        furniture: sel.map(f=>({name:f.name})),
+        totalVol
+      })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    quoteData = data;
+
+    document.getElementById('quoteLoading').style.display = 'none';
+    renderCompanies(quoteData);
+  } catch (e) {
+    document.getElementById('quoteLoading').style.display = 'none';
+    document.getElementById('quoteInitial').style.display = 'block';
+    showToast('오류 발생. 다시 시도해주세요');
+    console.error(e);
+  }
+}
+
+function renderCompanies(data) {
+  document.getElementById('quoteResult').style.display = 'block';
+  const cards = document.getElementById('companyCards');
+  cards.innerHTML = data.companies.map((c, i) => `
+    <div class="company-card ${c.best ? 'best' : ''}" id="cc${i}" onclick="selectCompany(${i})">
+      ${c.best ? '<div class="best-tag">✓ AI 추천</div>' : ''}
+      <div class="chosen-badge">✓</div>
+      <div class="company-top">
+        <div><div class="company-name">${c.emoji} ${c.name}</div><div class="company-rating">⭐ ${c.rating} · 후기 ${c.reviews.toLocaleString()}개</div></div>
+        <div><div class="company-price">₩${Math.round(c.price / 10000)}만</div><div class="company-price-sub">부가세 포함</div></div>
+      </div>
+      <div class="company-feats">${c.features.map(f => `<div class="cf-chip">${f}</div>`).join('')}</div>
+    </div>`).join('');
+
+  if (data.tip) {
+    cards.innerHTML += `<div style="background:var(--yellow-light);border-radius:14px;padding:14px;font-size:13px;color:var(--dark2);line-height:1.5">💡 ${data.tip}</div>`;
+  }
+
+  const bestIdx = data.companies.findIndex(c => c.best);
+  selectCompany(bestIdx >= 0 ? bestIdx : 0);
+}
+
+function selectCompany(idx) {
+  document.querySelectorAll('.company-card').forEach(c => c.classList.remove('chosen'));
+  const el = document.getElementById('cc' + idx);
+  if (el) el.classList.add('chosen');
+  selectedCompany = quoteData?.companies[idx];
+}
+
+function resetQuote() {
+  quoteData = null; selectedCompany = null;
+  document.getElementById('quoteResult').style.display = 'none';
+  document.getElementById('quoteInitial').style.display = 'block';
+}
+
+function confirmBooking() {
+  if (!selectedCompany) { showToast('업체를 선택해주세요'); return; }
+  const from = document.getElementById('fromAddr').value || '출발지';
+  const to = document.getElementById('toAddr').value || '도착지';
+  document.getElementById('quoteResult').style.display = 'none';
+  document.getElementById('bookingDone').style.display = 'block';
+  document.getElementById('bookingCard').innerHTML = `
+    <div class="bd-icon">🎉</div>
+    <div class="bd-title">예약 완료!</div>
+    <div class="bd-sub">${selectedCompany.emoji} ${selectedCompany.name}에 예약됐어요</div>
+    <div class="bd-details">
+      <div class="bd-row"><span>업체</span><span>${selectedCompany.name}</span></div>
+      <div class="bd-row"><span>구간</span><span>${from} → ${to}</span></div>
+      <div class="bd-row"><span>확정 견적</span><span>₩${Math.round(selectedCompany.price / 10000)}만원</span></div>
+      <div class="bd-row"><span>예약 번호</span><span>#ME${Math.floor(Math.random()*90000+10000)}</span></div>
+    </div>`;
+  showToast('🎉 이사 예약이 완료됐어요!');
+}
+
+// ── LANGUAGE SYSTEM ──
+let currentLang = 'ko';
+
+const T = {
+  ko: {
+    greeting: '안녕하세요 👋',
+    homeTitle: (name) => `${name}님의 <span>이사</span>`,
+    homeTitleDefault: '이사를 <span>스마트하게</span>',
+    projectTitle: '강남 → 마포 이사',
+    inProgress: '진행중',
+    roomsLabel: '방',
+    furnLabel: '가구',
+    scoreLabel: 'AI점수',
+    step1: '방 측정', step1sub: '공간 입력',
+    step2: '가구 등록', step2sub: '이사할 가구',
+    step3: 'AI 배치', step3sub: '자동 분석',
+    step4: '견적 받기', step4sub: '업체 비교',
+    navHome: '홈', navRoom: '방', navAI: 'AI배치', navLabel: '라벨', navQuote: '견적',
+    roomPageTitle: '방 측정', roomPageSub: '새 집의 각 방 크기를 입력해요',
+    furnPageTitle: '가구 등록', furnPageSub: '이사할 가구를 모두 선택해요',
+    aiPageTitle: 'AI 배치 분석', aiPageSub: 'Claude AI가 최적 배치를 제안해요',
+    labelPageTitle: '이사 라벨', labelPageSub: 'QR코드로 이사 작업 순서를 안내해요',
+    quotePageTitle: '이사 견적', quotePageSub: 'AI가 최적 업체를 비교해드려요',
+    startAI: '✨ AI 배치 분석 시작',
+    getQuote: '💰 AI 견적 산출하기',
+    loginTitle: '다시 만나요 👋', loginSub: '이메일로 로그인해요',
+    signupTitle: '시작해봐요 🚀', signupSub: '무료로 계정을 만들어요',
+    loginBtn: '로그인', signupBtn: '회원가입',
+    authTopSub: '스마트 이사 어시스턴트',
+    addRoom: '방 추가하기', nextFurn: '다음: 가구 등록 →',
+    aiAnalyzing: 'AI가 분석 중이에요...',
+    bookingDone: '예약 완료!', bookingBtn: '✅ 선택한 업체로 예약하기',
+    pdfBtn: '📄 PDF로 출력하기', nextQuote: '다음: 견적 받기 →',
+    logout: '로그아웃 하시겠어요?',
+    saved: '💾 저장됐어요', loaded: '📂 이전 데이터를 불러왔어요!',
+    welcome: (name) => `👋 ${name}님 환영해요!`,
+  },
+  en: {
+    greeting: 'Hello 👋',
+    homeTitle: (name) => `${name}'s <span>Move</span>`,
+    homeTitleDefault: 'Move <span>Smarter</span>',
+    projectTitle: 'Gangnam → Mapo Move',
+    inProgress: 'In Progress',
+    roomsLabel: 'Rooms',
+    furnLabel: 'Items',
+    scoreLabel: 'AI Score',
+    step1: 'Measure', step1sub: 'Room sizes',
+    step2: 'Furniture', step2sub: 'Select items',
+    step3: 'AI Layout', step3sub: 'Auto analysis',
+    step4: 'Get Quote', step4sub: 'Compare movers',
+    navHome: 'Home', navRoom: 'Rooms', navAI: 'AI', navLabel: 'Labels', navQuote: 'Quote',
+    roomPageTitle: 'Room Sizes', roomPageSub: 'Enter each room size in your new home',
+    furnPageTitle: 'Furniture', furnPageSub: 'Select all items you\'re moving',
+    aiPageTitle: 'AI Layout', aiPageSub: 'Claude AI suggests the optimal arrangement',
+    labelPageTitle: 'Moving Labels', labelPageSub: 'QR codes guide movers to the right spots',
+    quotePageTitle: 'Moving Quote', quotePageSub: 'AI compares the best moving companies',
+    startAI: '✨ Start AI Analysis',
+    getQuote: '💰 Get AI Quote',
+    loginTitle: 'Welcome back 👋', loginSub: 'Sign in with your email',
+    signupTitle: 'Get started 🚀', signupSub: 'Create your free account',
+    loginBtn: 'Sign In', signupBtn: 'Sign Up',
+    authTopSub: '스마트 이사 어시스턴트',
+    addRoom: 'Add Room', nextFurn: 'Next: Add Furniture →',
+    aiAnalyzing: 'AI is analyzing...',
+    bookingDone: 'Booking Confirmed!', bookingBtn: '✅ Book Selected Mover',
+    pdfBtn: '📄 Print as PDF', nextQuote: 'Next: Get Quote →',
+    logout: 'Are you sure you want to logout?',
+    saved: '💾 Saved!', loaded: '📂 Previous data loaded!',
+    welcome: (name) => `👋 Welcome, ${name}!`,
+  }
+};
+
+function t(key, ...args) {
+  const val = T[currentLang][key];
+  return typeof val === 'function' ? val(...args) : val;
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'ko' ? 'en' : 'ko';
+  const btn = document.getElementById('langBtn');
+  btn.textContent = currentLang === 'ko' ? '🇺🇸 EN' : '🇰🇷 KO';
+  applyLang();
+  showToast(currentLang === 'en' ? '🇺🇸 Switched to English!' : '🇰🇷 한국어로 변경됐어요!');
+}
+
+function applyLang() {
+  // 홈
+  document.getElementById('homeGreeting2').textContent = t('greeting');
+  if (currentUser) {
+    const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
+    document.getElementById('homeGreeting').innerHTML = t('homeTitle', name);
+  } else {
+    document.getElementById('homeGreeting').innerHTML = t('homeTitleDefault');
+  }
+  // 통계 라벨
+  const statLabels = document.querySelectorAll('.stat-label');
+  if (statLabels[0]) statLabels[0].textContent = t('roomsLabel');
+  if (statLabels[1]) statLabels[1].textContent = t('furnLabel');
+  if (statLabels[2]) statLabels[2].textContent = t('scoreLabel');
+  // 액션 카드
+  const actionTitles = document.querySelectorAll('.action-title');
+  const actionDescs = document.querySelectorAll('.action-desc');
+  const steps = ['step1','step2','step3','step4'];
+  steps.forEach((s,i) => {
+    if (actionTitles[i]) actionTitles[i].textContent = t(s);
+    if (actionDescs[i]) actionDescs[i].textContent = t(s+'sub');
+  });
+  // 네비
+  const navLabels = document.querySelectorAll('.nav-label');
+  const navKeys = ['navHome','navAI','navLabel','navQuote'];
+  navKeys.forEach((k,i) => { if(navLabels[i]) navLabels[i].textContent = t(k); });
+  // 페이지 타이틀들
+  const pageTitles = document.querySelectorAll('.page-title');
+  const pageSubs = document.querySelectorAll('.page-sub');
+  const pages = ['roomPageTitle','furnPageTitle','aiPageTitle','labelPageTitle','quotePageTitle'];
+  const pageSt = ['roomPageSub','furnPageSub','aiPageSub','labelPageSub','quotePageSub'];
+  pages.forEach((k,i) => { if(pageTitles[i]) pageTitles[i].textContent = t(k); });
+  pageSt.forEach((k,i) => { if(pageSubs[i]) pageSubs[i].textContent = t(k); });
+  // 버튼들
+  const aiBtn = document.getElementById('aiStartBtn');
+  if (aiBtn) aiBtn.textContent = t('startAI');
+  // Auth
+  document.querySelector('.auth-top-sub').textContent = t('authTopSub');
+}
+
+// ── 2D FLOORPLAN ──
+let fpCanvas, fpCtx, fpCanvasW, fpCanvasH, fpScale = 1;
+let fpRoomConfig = { name:'거실', emoji:'🛋️', color:'#e8563a', w:450, d:380, shape:'rectangle' };
+let fpPlaced = [];
+let fpSelectedIdx = -1;
+let fpTool = 'move';
+let fpIsDragging = false;
+let fpDragOffX = 0, fpDragOffY = 0;
+let fpUploadedBase64 = null;
+let fpUploadedMediaType = 'image/jpeg';
+let fpAnalysis = null;
+let fpShapeSelected = 'rectangle';
+
+const FP_FURNITURE = [
+  {id:1,emoji:'🛋️',name:'3인소파',w:220,d:90,color:'#3a7fe8'},
+  {id:2,emoji:'📺',name:'TV장식장',w:180,d:45,color:'#2db67d'},
+  {id:3,emoji:'☕',name:'테이블',w:100,d:60,color:'#f5a623'},
+  {id:4,emoji:'🛏️',name:'퀸침대',w:160,d:200,color:'#9b59b6'},
+  {id:5,emoji:'🛏️',name:'싱글침대',w:100,d:200,color:'#9b59b6'},
+  {id:6,emoji:'🪞',name:'옷장',w:120,d:55,color:'#e8563a'},
+  {id:7,emoji:'🍽️',name:'식탁',w:140,d:80,color:'#f5a623'},
+  {id:8,emoji:'🖥️',name:'책상',w:140,d:60,color:'#1a1a1a'},
+  {id:9,emoji:'📚',name:'책장',w:90,d:30,color:'#2db67d'},
+  {id:10,emoji:'🪑',name:'의자',w:60,d:60,color:'#9a9a9a'},
+  {id:11,emoji:'❄️',name:'냉장고',w:70,d:75,color:'#3a7fe8'},
+  {id:12,emoji:'🧺',name:'세탁기',w:60,d:60,color:'#3a7fe8'},
+];
+
+function switchRoomTab(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`roomTab${i}`).classList.toggle('active', i===n);
+    document.getElementById(`roomTabContent${i}`).style.display = i===n ? 'block' : 'none';
+  });
+  if(n===3) { setTimeout(() => { fpInitCanvas(); fpDrawAll(); fpRenderPalette(); }, 50); }
+}
+
+// ── CANVAS INIT ──
+function fpInitCanvas() {
+  fpCanvas = document.getElementById('fpCanvas');
+  if(!fpCanvas) return;
+  fpCtx = fpCanvas.getContext('2d');
+  const cont = document.getElementById('fpCanvasContainer');
+  const cw = cont.clientWidth;
+  const ch = Math.min(cw * 0.8, 320);
+  fpCanvas.width = cw; fpCanvas.height = ch;
+  fpCanvasW = cw; fpCanvasH = ch;
+  const sx = (cw-40)/fpRoomConfig.w;
+  const sy = (ch-40)/fpRoomConfig.d;
+  fpScale = Math.min(sx, sy);
+
+  // 동기화: 등록된 방이 있으면 첫번째 방으로 설정
+  if(rooms.length > 0) {
+    const r = rooms[0];
+    fpRoomConfig = { name:r.name, emoji:r.emoji, color:r.color, w:r.w, d:r.d, shape:r.shape||'rectangle' };
+    const sx2 = (cw-40)/fpRoomConfig.w;
+    const sy2 = (ch-40)/fpRoomConfig.d;
+    fpScale = Math.min(sx2, sy2);
+  }
+
+  fpCanvas.addEventListener('touchstart', fpOnTouchStart, {passive:false});
+  fpCanvas.addEventListener('touchmove', fpOnTouchMove, {passive:false});
+  fpCanvas.addEventListener('touchend', fpOnTouchEnd);
+  fpCanvas.addEventListener('mousedown', fpOnMouseDown);
+  fpCanvas.addEventListener('mousemove', fpOnMouseMove);
+  fpCanvas.addEventListener('mouseup', fpOnMouseUp);
+}
+
+function fpGetOffset() {
+  return {
+    ox: (fpCanvasW - fpRoomConfig.w * fpScale) / 2,
+    oy: (fpCanvasH - fpRoomConfig.d * fpScale) / 2
+  };
+}
+
+function fpGetCanvasPos(e) {
+  const rect = fpCanvas.getBoundingClientRect();
+  const sr = fpCanvas.width / rect.width;
+  if(e.touches) return { x:(e.touches[0].clientX-rect.left)*sr, y:(e.touches[0].clientY-rect.top)*sr };
+  return { x:(e.clientX-rect.left)*sr, y:(e.clientY-rect.top)*sr };
+}
+
+function fpGetFurnitureAt(px, py) {
+  const {ox, oy} = fpGetOffset();
+  for(let i = fpPlaced.length-1; i >= 0; i--) {
+    const f = fpPlaced[i];
+    const fx = ox + f.x*fpScale, fy = oy + f.y*fpScale;
+    if(px>=fx && px<=fx+f.w*fpScale && py>=fy && py<=fy+f.d*fpScale) return i;
+  }
+  return -1;
+}
+
+// EVENTS
+function fpOnTouchStart(e){e.preventDefault();const p=fpGetCanvasPos(e);fpPointerDown(p.x,p.y)}
+function fpOnTouchMove(e){e.preventDefault();const p=fpGetCanvasPos(e);fpPointerMove(p.x,p.y)}
+function fpOnTouchEnd(){fpPointerUp()}
+function fpOnMouseDown(e){const p=fpGetCanvasPos(e);fpPointerDown(p.x,p.y)}
+function fpOnMouseMove(e){const p=fpGetCanvasPos(e);fpPointerMove(p.x,p.y)}
+function fpOnMouseUp(){fpPointerUp()}
+
+function fpPointerDown(px,py){
+  if(fpTool==='delete'){
+    const i=fpGetFurnitureAt(px,py);
+    if(i>=0){fpPlaced.splice(i,1);fpSelectedIdx=-1;fpHidePanel();fpDrawAll();showToast('🗑️ 삭제됐어요')}
+    return;
+  }
+  const i=fpGetFurnitureAt(px,py);
+  if(i>=0){
+    fpSelectedIdx=i; fpIsDragging=true;
+    const {ox,oy}=fpGetOffset();
+    const f=fpPlaced[i];
+    fpDragOffX=px-(ox+f.x*fpScale);
+    fpDragOffY=py-(oy+f.y*fpScale);
+    fpShowPanel(i); fpDrawAll();
+  } else { fpSelectedIdx=-1; fpHidePanel(); fpDrawAll(); }
+}
+
+function fpPointerMove(px,py){
+  if(!fpIsDragging||fpSelectedIdx<0) return;
+  const {ox,oy}=fpGetOffset();
+  const f=fpPlaced[fpSelectedIdx];
+  let nx=Math.round((px-ox-fpDragOffX)/fpScale/10)*10;
+  let ny=Math.round((py-oy-fpDragOffY)/fpScale/10)*10;
+  f.x=nx; f.y=ny;
+  fpUpdatePanel(fpSelectedIdx); fpDrawAll();
+}
+
+function fpPointerUp(){
+  if(fpIsDragging&&fpSelectedIdx>=0){
+    const f=fpPlaced[fpSelectedIdx];
+    if(fpCheckOutside(f)) showToast('⚠️ 방 밖으로 벗어났어요!');
+    else if(fpCheckCollision(f,fpSelectedIdx)) showToast('⚠️ 다른 가구와 겹쳐요!');
+  }
+  fpIsDragging=false;
+}
+
+// DRAW
+function fpDrawAll(){
+  if(!fpCtx) return;
+  fpCtx.clearRect(0,0,fpCanvasW,fpCanvasH);
+  const {ox,oy}=fpGetOffset();
+  fpDrawGrid(ox,oy);
+  fpDrawRoom(ox,oy);
+  fpDrawDims(ox,oy);
+  fpPlaced.forEach((f,i)=>fpDrawFurn(f,i,ox,oy));
+  fpUpdateStats();
+}
+
+function fpDrawGrid(ox,oy){
+  fpCtx.strokeStyle='rgba(0,0,0,0.04)';
+  fpCtx.lineWidth=1;
+  const g=50*fpScale;
+  for(let x=ox%g;x<fpCanvasW;x+=g){fpCtx.beginPath();fpCtx.moveTo(x,0);fpCtx.lineTo(x,fpCanvasH);fpCtx.stroke()}
+  for(let y=oy%g;y<fpCanvasH;y+=g){fpCtx.beginPath();fpCtx.moveTo(0,y);fpCtx.lineTo(fpCanvasW,y);fpCtx.stroke()}
+}
+
+function fpDrawRoom(ox,oy){
+  const rw=fpRoomConfig.w*fpScale, rd=fpRoomConfig.d*fpScale;
+  const shape=fpRoomConfig.shape||'rectangle';
+  fpCtx.save();
+  fpCtx.shadowColor='rgba(0,0,0,0.08)'; fpCtx.shadowBlur=8;
+  fpCtx.fillStyle='rgba(255,255,255,0.92)';
+  fpCtx.strokeStyle=fpRoomConfig.color; fpCtx.lineWidth=2.5; fpCtx.lineJoin='round';
+  fpCtx.beginPath();
+  if(shape==='L'){
+    fpCtx.moveTo(ox,oy); fpCtx.lineTo(ox+rw*0.55,oy); fpCtx.lineTo(ox+rw*0.55,oy+rd*0.45);
+    fpCtx.lineTo(ox+rw,oy+rd*0.45); fpCtx.lineTo(ox+rw,oy+rd); fpCtx.lineTo(ox,oy+rd); fpCtx.closePath();
+  } else if(shape==='T'){
+    fpCtx.moveTo(ox,oy); fpCtx.lineTo(ox+rw,oy); fpCtx.lineTo(ox+rw,oy+rd*0.45);
+    fpCtx.lineTo(ox+rw*0.65,oy+rd*0.45); fpCtx.lineTo(ox+rw*0.65,oy+rd);
+    fpCtx.lineTo(ox+rw*0.35,oy+rd); fpCtx.lineTo(ox+rw*0.35,oy+rd*0.45);
+    fpCtx.lineTo(ox,oy+rd*0.45); fpCtx.closePath();
+  } else if(shape==='triangle'){
+    fpCtx.moveTo(ox+rw/2,oy); fpCtx.lineTo(ox+rw,oy+rd); fpCtx.lineTo(ox,oy+rd); fpCtx.closePath();
+  } else {
+    fpCtx.rect(ox,oy,rw,rd);
+  }
+  fpCtx.fill(); fpCtx.stroke(); fpCtx.restore();
+  fpCtx.fillStyle=fpRoomConfig.color; fpCtx.globalAlpha=0.25;
+  fpCtx.font=`bold ${Math.max(10,fpScale*12)}px Plus Jakarta Sans`;
+  fpCtx.textAlign='center'; fpCtx.textBaseline='middle';
+  fpCtx.fillText(`${fpRoomConfig.emoji} ${fpRoomConfig.name}`,ox+rw/2,oy+rd/2);
+  fpCtx.globalAlpha=1;
+}
+
+function fpDrawDims(ox,oy){
+  const rw=fpRoomConfig.w*fpScale, rd=fpRoomConfig.d*fpScale;
+  fpCtx.fillStyle='#aaa'; fpCtx.font='600 10px Plus Jakarta Sans';
+  fpCtx.textAlign='center'; fpCtx.textBaseline='middle';
+  fpCtx.fillText(`${fpRoomConfig.w}cm`,ox+rw/2,oy-10);
+  fpCtx.save(); fpCtx.translate(ox-12,oy+rd/2); fpCtx.rotate(-Math.PI/2);
+  fpCtx.fillText(`${fpRoomConfig.d}cm`,0,0); fpCtx.restore();
+}
+
+function fpDrawFurn(f,idx,ox,oy){
+  const fw=f.w*fpScale, fd=f.d*fpScale;
+  const fx=ox+f.x*fpScale, fy=oy+f.y*fpScale;
+  const isSel=idx===fpSelectedIdx;
+  const isOut=fpCheckOutside(f);
+  const isColl=fpCheckCollision(f,idx);
+  fpCtx.save();
+  fpCtx.translate(fx+fw/2,fy+fd/2);
+  if(f.rot) fpCtx.rotate(f.rot*Math.PI/180);
+  fpCtx.translate(-fw/2,-fd/2);
+  if(isSel){fpCtx.shadowColor='rgba(0,0,0,0.15)';fpCtx.shadowBlur=10;fpCtx.shadowOffsetY=3}
+  fpCtx.fillStyle=isOut?'rgba(232,58,58,0.18)':isColl?'rgba(245,166,35,0.18)':`${f.color}20`;
+  fpCtx.strokeStyle=isOut?'#e83a3a':isColl?'#f5a623':isSel?'#1a1a1a':f.color;
+  fpCtx.lineWidth=isSel?2:1.5; fpCtx.lineJoin='round';
+  const r=3;
+  fpCtx.beginPath();
+  fpCtx.moveTo(r,0);fpCtx.lineTo(fw-r,0);fpCtx.arcTo(fw,0,fw,r,r);
+  fpCtx.lineTo(fw,fd-r);fpCtx.arcTo(fw,fd,fw-r,fd,r);
+  fpCtx.lineTo(r,fd);fpCtx.arcTo(0,fd,0,fd-r,r);
+  fpCtx.lineTo(0,r);fpCtx.arcTo(0,0,r,0,r);fpCtx.closePath();
+  fpCtx.fill(); fpCtx.stroke();
+  fpCtx.shadowColor='transparent';
+  const es=Math.max(9,Math.min(fw,fd)*0.45);
+  fpCtx.font=`${es}px serif`;fpCtx.textAlign='center';fpCtx.textBaseline='middle';
+  fpCtx.globalAlpha=1; fpCtx.fillStyle='#000';
+  fpCtx.fillText(f.emoji,fw/2,fd/2-3);
+  fpCtx.font=`600 ${Math.max(6,Math.min(fw/f.name.length,8))}px Plus Jakarta Sans`;
+  fpCtx.fillStyle=isOut?'#e83a3a':'#666';
+  fpCtx.fillText(f.name,fw/2,fd-6);
+  if(isSel){fpCtx.strokeStyle='#1a1a1a';fpCtx.lineWidth=1;fpCtx.setLineDash([3,3]);fpCtx.strokeRect(-2,-2,fw+4,fd+4);fpCtx.setLineDash([])}
+  if(isOut||isColl){
+    fpCtx.fillStyle=isOut?'#e83a3a':'#f5a623';
+    fpCtx.beginPath();fpCtx.arc(fw-2,2,6,0,Math.PI*2);fpCtx.fill();
+    fpCtx.fillStyle='white';fpCtx.font='bold 7px serif';fpCtx.textAlign='center';fpCtx.textBaseline='middle';
+    fpCtx.fillText('!',fw-2,2);
+  }
+  fpCtx.restore();
+}
+
+function fpCheckOutside(f){return f.x<0||f.y<0||f.x+f.w>fpRoomConfig.w||f.y+f.d>fpRoomConfig.d}
+function fpCheckCollision(f,idx){
+  return fpPlaced.some((o,i)=>i!==idx&&!(f.x+f.w<=o.x||o.x+o.w<=f.x||f.y+f.d<=o.y||o.y+o.d<=f.y));
+}
+
+function fpUpdateStats(){
+  const area=fpRoomConfig.w*fpRoomConfig.d;
+  const used=fpPlaced.reduce((s,f)=>s+f.w*f.d,0);
+  const pct=Math.min(100,Math.round(used/area*100));
+  const colls=fpPlaced.filter((f,i)=>fpCheckCollision(f,i)||fpCheckOutside(f));
+  document.getElementById('fpStatUsage').querySelector('.fp-stat-val').textContent=pct+'%';
+  document.getElementById('fpStatItems').querySelector('.fp-stat-val').textContent=fpPlaced.length;
+  const ce=document.getElementById('fpStatColl');
+  if(colls.length>0){ce.querySelector('.fp-stat-val').textContent='⚠️'+colls.length;ce.className='fp-stat warn';ce.querySelector('.fp-stat-label').textContent='충돌있음'}
+  else{ce.querySelector('.fp-stat-val').textContent='✅';ce.className='fp-stat good';ce.querySelector('.fp-stat-label').textContent='충돌없음'}
+}
+
+function fpRenderPalette(){
+  const p=document.getElementById('fpFurnPalette');
+  if(!p) return;
+  p.innerHTML=FP_FURNITURE.map(f=>`
+    <div class="palette-chip" onclick="fpAddFurn(${f.id})">
+      <div class="pc-emoji">${f.emoji}</div>
+      <div class="pc-name">${f.name}</div>
+      <div class="pc-size">${f.w}×${f.d}</div>
+    </div>`).join('');
+}
+
+function fpAddFurn(id){
+  const t=FP_FURNITURE.find(f=>f.id===id);
+  if(!t) return;
+  const nf={...t,x:10,y:10,rot:0};
+  let placed=false;
+  for(let y=10;y<fpRoomConfig.d-t.d;y+=20){
+    for(let x=10;x<fpRoomConfig.w-t.w;x+=20){
+      nf.x=x;nf.y=y;
+      if(!fpPlaced.some(f=>!(nf.x+nf.w<=f.x||f.x+f.w<=nf.x||nf.y+nf.d<=f.y||f.y+f.d<=nf.y))){placed=true;break}
+    }
+    if(placed) break;
+  }
+  fpPlaced.push(nf);
+  fpSelectedIdx=fpPlaced.length-1;
+  fpShowPanel(fpSelectedIdx);
+  fpDrawAll();
+  showToast(`✅ ${t.emoji} ${t.name} 추가됨`);
+}
+
+function fpSetTool(t){
+  fpTool=t;
+  document.querySelectorAll('.fp-tool').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fpTool'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.add('active');
+  if(t!=='move'){fpSelectedIdx=-1;fpHidePanel();fpDrawAll()}
+}
+
+function fpRotateSelected(){
+  if(fpSelectedIdx<0) return;
+  const f=fpPlaced[fpSelectedIdx];
+  [f.w,f.d]=[f.d,f.w]; f.rot=(f.rot||0)+90;
+  fpDrawAll(); showToast('🔄 회전됐어요');
+}
+
+function fpDeleteSelected(){
+  if(fpSelectedIdx<0) return;
+  fpPlaced.splice(fpSelectedIdx,1);
+  fpSelectedIdx=-1; fpHidePanel(); fpDrawAll();
+  showToast('🗑️ 삭제됐어요');
+}
+
+function fpClearAll(){
+  if(!fpPlaced.length) return;
+  if(confirm('모든 가구를 삭제할까요?')){fpPlaced=[];fpSelectedIdx=-1;fpHidePanel();fpDrawAll();showToast('전체 삭제됐어요')}
+}
+
+function fpShowPanel(i){
+  const f=fpPlaced[i];
+  document.getElementById('fpSpEmoji').textContent=f.emoji;
+  document.getElementById('fpSpName').textContent=f.name;
+  fpUpdatePanel(i);
+  document.getElementById('fpSelPanel').classList.add('show');
+}
+
+function fpUpdatePanel(i){
+  const f=fpPlaced[i];
+  document.getElementById('fpSpPos').textContent=`위치: (${Math.round(f.x)}, ${Math.round(f.y)}) cm`;
+  const w=document.getElementById('fpSpWarn');
+  if(fpCheckOutside(f)){w.style.display='block';w.textContent='⚠️ 방 밖으로 벗어났어요!'}
+  else if(fpCheckCollision(f,i)){w.style.display='block';w.textContent='⚠️ 다른 가구와 겹쳐요!'}
+  else w.style.display='none';
+}
+
+function fpHidePanel(){ document.getElementById('fpSelPanel').classList.remove('show') }
+
+function fpSaveLayout(){
+  const c=fpPlaced.filter((f,i)=>fpCheckCollision(f,i)||fpCheckOutside(f));
+  if(c.length>0){showToast('⚠️ 충돌/이탈 가구를 먼저 수정해주세요');return}
+  showToast('💾 배치가 저장됐어요!');
+}
+
+function fpExport(){
+  if(!fpCanvas) return;
+  const a=document.createElement('a');
+  a.href=fpCanvas.toDataURL('image/png');
+  a.download='mova-layout.png'; a.click();
+  showToast('📥 이미지 저장됐어요!');
+}
+
+// ── PHOTO ANALYSIS ──
+function handleFpFileSelect(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    // 이미지 압축
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      // 최대 1200px로 리사이즈
+      let w=img.width, h=img.height;
+      const maxSize=1200;
+      if(w>maxSize||h>maxSize){
+        if(w>h){h=Math.round(h*maxSize/w);w=maxSize}
+        else{w=Math.round(w*maxSize/h);h=maxSize}
+      }
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // JPEG 0.85 품질로 압축
+      const compressed=canvas.toDataURL('image/jpeg',0.85);
+      fpUploadedBase64=compressed.split(',')[1];
+      fpUploadedMediaType='image/jpeg';
+      document.getElementById('fpPreviewImg').src=compressed;
+      document.getElementById('fpUploadArea').style.display='none';
+      document.getElementById('fpPreviewArea').style.display='block';
+      showToast('📸 사진 준비 완료!');
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeFpPhoto(){
+  if(!fpUploadedBase64){showToast('사진을 먼저 올려주세요');return}
+  document.getElementById('fpPreviewArea').style.display='none';
+  document.getElementById('fpAnalyzeLoading').style.display='block';
+  try{
+    const res=await fetch('/api/analyze-photo',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({imageBase64:fpUploadedBase64,mediaType:'image/jpeg'})
+    });
+    const data=await res.json();
+    if(data.error){throw new Error('API 오류: '+data.error)}
+    if(!data.width && !data.depth){throw new Error('분석 결과가 없어요')}
+    fpAnalysis=data;
+    document.getElementById('fpAnalyzeLoading').style.display='none';
+    showFpAnalysisResult(fpAnalysis);
+  }catch(e){
+    console.error('분석 오류:', e);
+    document.getElementById('fpAnalyzeLoading').style.display='none';
+    document.getElementById('fpPreviewArea').style.display='block';
+    showToast('분석 오류: ' + (e.message||'다시 시도해주세요'));
+  }
+}
+
+function showFpAnalysisResult(r){
+  document.getElementById('fpW').textContent=r.width;
+  document.getElementById('fpD').textContent=r.depth;
+  document.getElementById('fpArea').textContent=(r.area||(r.width*r.depth/10000)).toFixed(1);
+  const shapeNames={rectangle:'직사각형',square:'정사각형',L:'ㄱ자',T:'T자',triangle:'삼각형',custom:'기타'};
+  document.getElementById('fpShape').textContent=shapeNames[r.shape]||r.shape;
+  document.getElementById('fpDesc').innerHTML=`<div style="margin-bottom:6px">${r.description}</div>`+
+    (r.suggestions?r.suggestions.map(s=>`<div style="margin-bottom:3px;color:var(--green)">• ${s}</div>`).join(''):'');
+  document.querySelectorAll('#fpShapeGrid .shape-btn').forEach(b=>b.classList.toggle('selected',b.dataset.shape===r.shape));
+  fpShapeSelected=r.shape;
+  document.getElementById('fpAnalysisResult').style.display='block';
+}
+
+function selectFpShape(el,shape){
+  document.querySelectorAll('#fpShapeGrid .shape-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected'); fpShapeSelected=shape;
+  if(fpAnalysis) fpAnalysis.shape=shape;
+}
+
+function applyFpAnalysis(){
+  if(!fpAnalysis){showToast('분석 결과가 없어요');return}
+  // 방 목록에 추가
+  rooms.push({
+    name:fpRoomConfig.name, emoji:fpRoomConfig.emoji, color:fpRoomConfig.color,
+    w:fpAnalysis.width, d:fpAnalysis.depth, h:240,
+    shape:fpShapeSelected, id:Date.now()
+  });
+  fpRoomConfig={...fpRoomConfig,w:fpAnalysis.width,d:fpAnalysis.depth,shape:fpShapeSelected};
+  renderRooms(); updateHomeStats();
+  showToast(`✅ 방이 추가됐어요! (${fpAnalysis.width}×${fpAnalysis.depth}cm)`);
+  switchRoomTab(1);
+}
+
+// ── INIT ──
+renderFurniture();
+renderRooms();
+
+// 자동 저장 (30초마다)
+setInterval(() => { if(currentUser) saveUserData(); }, 30000);
+
+// Supabase 인증 초기화 (로그인 상태 확인)
+initAuth();
+</script>
+</body>
+</html>
