@@ -22,7 +22,7 @@ shape는 rectangle/square/L/T/triangle/custom 중 하나. width와 depth는 cm �
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+       model: 'claude-sonnet-4-5',
         max_tokens: 1000,
         messages: [{
           role: 'user',
